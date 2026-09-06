@@ -17,7 +17,3 @@ Redact first.
 - Every object is written to a local backup file before it is changed.
 - Objects marked protected (break-glass accounts, PIM-managed assignments) are reported, never touched.
 - No telemetry, no phone-home.
-<!-- automation-only -->
-- Runs under a managed identity the customer owns; the project never holds credentials. The custom
-  role in `deploy/main.bicep` lists exactly the actions the runbook needs.
-<!-- /automation-only -->

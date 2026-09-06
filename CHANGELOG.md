@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
-- Module skeleton `__ModuleName__` (PowerShell 7.2+): `Get-__Noun__`, `Remove-__Noun__`, Pester
+- Module skeleton `RiskyRolesAnalyzer` (PowerShell 7.2+): `Get-RiskyRoleAssignment`, `Remove-RiskyRoleAssignment`, Pester
   tests, release workflow.
 
 ### Verified

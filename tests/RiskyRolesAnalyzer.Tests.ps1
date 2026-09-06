@@ -1,15 +1,15 @@
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.5.0' }
 
 BeforeAll {
-    $manifestPath = Join-Path $PSScriptRoot '..' 'src' '__ModuleName__' '__ModuleName__.psd1'
+    $manifestPath = Join-Path $PSScriptRoot '..' 'src' 'RiskyRolesAnalyzer' 'RiskyRolesAnalyzer.psd1'
     Import-Module $manifestPath -Force -ErrorAction Stop
-    $module = Get-Module __ModuleName__
+    $module = Get-Module RiskyRolesAnalyzer
 
     # Private functions are fetched from the module scope once. Invoking the FunctionInfo runs the
     # body inside the module, so $script: variables resolve as they do in production.
     $Private = & $module {
         @{
-            Resolve  = Get-Command Resolve-__Noun__Finding
+            Resolve  = Get-Command Resolve-RiskyRoleAssignmentFinding
             Property = Get-Command Get-PropertyOrDefault
         }
     }
@@ -24,7 +24,7 @@ BeforeAll {
 
 Describe 'Module' {
     BeforeDiscovery {
-        $publicFolder = Join-Path $PSScriptRoot '..' 'src' '__ModuleName__' 'Public'
+        $publicFolder = Join-Path $PSScriptRoot '..' 'src' 'RiskyRolesAnalyzer' 'Public'
         $publicFunctions = @(Get-ChildItem -Path $publicFolder -Filter '*.ps1' -File | ForEach-Object BaseName | Sort-Object)
         $stateChanging = @($publicFunctions | Where-Object { ($_ -split '-')[0] -in 'Remove', 'Set', 'New', 'Start', 'Stop', 'Restore', 'Update', 'Clear', 'Disable', 'Enable' })
     }
@@ -34,7 +34,7 @@ Describe 'Module' {
     }
 
     It 'exports exactly the functions in Public/ and the manifest agrees' {
-        $public = @(Get-ChildItem -Path (Join-Path $PSScriptRoot '..' 'src' '__ModuleName__' 'Public') -Filter '*.ps1' -File | ForEach-Object BaseName | Sort-Object)
+        $public = @(Get-ChildItem -Path (Join-Path $PSScriptRoot '..' 'src' 'RiskyRolesAnalyzer' 'Public') -Filter '*.ps1' -File | ForEach-Object BaseName | Sort-Object)
         @($module.ExportedFunctions.Keys | Sort-Object) | Should -Be $public
         $manifest = Import-PowerShellDataFile -Path $manifestPath
         @($manifest.FunctionsToExport | Sort-Object) | Should -Be $public
@@ -68,11 +68,11 @@ Describe 'Get-PropertyOrDefault' {
     It 'falls back on null input' { (& $Private.Property $null 'A' -Default 'x') | Should -Be 'x' }
 }
 
-Describe 'Resolve-__Noun__Finding' {
+Describe 'Resolve-RiskyRoleAssignmentFinding' {
     It 'rates privileged and unused as High' {
         $finding = & $Private.Resolve (New-Raw @{ IsPrivileged = $true; IsActive = $false })
         $finding.Severity | Should -Be 'High'
-        $finding.PSObject.TypeNames[0] | Should -Be '__ModuleName__.__Noun__'
+        $finding.PSObject.TypeNames[0] | Should -Be 'RiskyRolesAnalyzer.RiskyRoleAssignment'
     }
     It 'rates privileged and active as Medium' { (& $Private.Resolve (New-Raw @{ IsPrivileged = $true })).Severity | Should -Be 'Medium' }
     It 'rates everything else as Info' { (& $Private.Resolve (New-Raw)).Severity | Should -Be 'Info' }
@@ -80,46 +80,46 @@ Describe 'Resolve-__Noun__Finding' {
     It 'carries the Protected flag through' { (& $Private.Resolve (New-Raw @{ Protected = $true })).Protected | Should -BeTrue }
 }
 
-Describe 'Get-__Noun__' {
+Describe 'Get-RiskyRoleAssignment' {
     It 'takes pipeline input and returns typed findings' {
-        $result = @((New-Raw), (New-Raw @{ Name = 'item-02'; IsPrivileged = $true }) | Get-__Noun__)
+        $result = @((New-Raw), (New-Raw @{ Name = 'item-02'; IsPrivileged = $true }) | Get-RiskyRoleAssignment)
         $result.Count | Should -Be 2
         $result[1].Severity | Should -Be 'Medium'
     }
     It 'filters on MinimumSeverity' {
-        $result = @((New-Raw), (New-Raw @{ IsPrivileged = $true; IsActive = $false }) | Get-__Noun__ -MinimumSeverity High)
+        $result = @((New-Raw), (New-Raw @{ IsPrivileged = $true; IsActive = $false }) | Get-RiskyRoleAssignment -MinimumSeverity High)
         $result.Count | Should -Be 1
         $result[0].Severity | Should -Be 'High'
     }
-    It 'ignores null input' { @($null | Get-__Noun__).Count | Should -Be 0 }
+    It 'ignores null input' { @($null | Get-RiskyRoleAssignment).Count | Should -Be 0 }
 }
 
-Describe 'Remove-__Noun__' {
+Describe 'Remove-RiskyRoleAssignment' {
     BeforeEach {
         $backupPath = Join-Path $TestDrive 'backup.json'
         Remove-Item -Path $backupPath -Force -ErrorAction SilentlyContinue
     }
 
     It 'does nothing under -WhatIf and writes no backup' {
-        $result = New-Raw @{ IsPrivileged = $true } | Get-__Noun__ | Remove-__Noun__ -BackupPath $backupPath -WhatIf
+        $result = New-Raw @{ IsPrivileged = $true } | Get-RiskyRoleAssignment | Remove-RiskyRoleAssignment -BackupPath $backupPath -WhatIf
         $result.Result | Should -Be 'Skipped'
         Test-Path $backupPath | Should -BeFalse
     }
 
     It 'writes the backup before acting' {
-        $result = New-Raw @{ Name = 'gone' ; IsPrivileged = $true } | Get-__Noun__ | Remove-__Noun__ -BackupPath $backupPath -Confirm:$false
+        $result = New-Raw @{ Name = 'gone' ; IsPrivileged = $true } | Get-RiskyRoleAssignment | Remove-RiskyRoleAssignment -BackupPath $backupPath -Confirm:$false
         $result.Result | Should -Be 'Removed'
         @(Get-Content $backupPath -Raw | ConvertFrom-Json)[0].Name | Should -Be 'gone'
     }
 
     It 'never touches protected objects' {
-        $result = New-Raw @{ Protected = $true; IsPrivileged = $true } | Get-__Noun__ | Remove-__Noun__ -BackupPath $backupPath -Confirm:$false -WarningAction SilentlyContinue
+        $result = New-Raw @{ Protected = $true; IsPrivileged = $true } | Get-RiskyRoleAssignment | Remove-RiskyRoleAssignment -BackupPath $backupPath -Confirm:$false -WarningAction SilentlyContinue
         $result.Result | Should -Be 'Skipped'
         $result.Reason | Should -Be 'Protected'
         Test-Path $backupPath | Should -BeFalse
     }
 
-    It 'rejects objects that did not come from Get-__Noun__' {
-        { [pscustomobject]@{ Name = 'raw' } | Remove-__Noun__ -WhatIf -ErrorAction Stop } | Should -Throw
+    It 'rejects objects that did not come from Get-RiskyRoleAssignment' {
+        { [pscustomobject]@{ Name = 'raw' } | Remove-RiskyRoleAssignment -WhatIf -ErrorAction Stop } | Should -Throw
     }
 }

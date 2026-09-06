@@ -5,8 +5,8 @@ $script:ModuleRoot = $PSScriptRoot
 # Everything a user can see or depend on (type names, tag names, state values) is declared here,
 # once. Changing one is a breaking change and goes through the CHANGELOG.
 $script:TypeName = @{
-    Finding = '__ModuleName__.__Noun__'
-    Removal = '__ModuleName__.__Noun__Removal'
+    Finding = 'RiskyRolesAnalyzer.RiskyRoleAssignment'
+    Removal = 'RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval'
 }
 
 foreach ($folder in 'Private', 'Public') {

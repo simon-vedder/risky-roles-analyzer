@@ -1,7 +1,7 @@
-function Get-__Noun__ {
+function Get-RiskyRoleAssignment {
     <#
     .SYNOPSIS
-    Read-only discovery of __Noun__ findings.
+    Read-only discovery of RiskyRoleAssignment findings.
 
     .DESCRIPTION
     Skeleton example of the read path. Replace the source (here the -InputObject parameter) with
@@ -16,20 +16,20 @@ function Get-__Noun__ {
     Return only findings at or above this severity.
 
     .EXAMPLE
-    Get-__Noun__ | Format-Table Name, Severity, Reason
+    Get-RiskyRoleAssignment | Format-Table Name, Severity, Reason
 
     .EXAMPLE
-    Get-__Noun__ -MinimumSeverity High | Remove-__Noun__ -WhatIf
+    Get-RiskyRoleAssignment -MinimumSeverity High | Remove-RiskyRoleAssignment -WhatIf
 
     .OUTPUTS
-    __ModuleName__.__Noun__
+    RiskyRolesAnalyzer.RiskyRoleAssignment
 
     .NOTES
     Required permissions: read-only. List the exact Graph scopes or RBAC actions here, and in the
     README's Permissions section.
     #>
     [CmdletBinding()]
-    [OutputType('__ModuleName__.__Noun__')]
+    [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignment')]
     param(
         [Parameter(ValueFromPipeline)]
         [object[]]$InputObject,
@@ -46,7 +46,7 @@ function Get-__Noun__ {
     process {
         foreach ($raw in @($InputObject)) {
             if ($null -eq $raw) { continue }
-            $finding = Resolve-__Noun__Finding -InputObject $raw
+            $finding = Resolve-RiskyRoleAssignmentFinding -InputObject $raw
             if ($rank[$finding.Severity] -lt $rank[$MinimumSeverity]) { continue }
             $finding
         }

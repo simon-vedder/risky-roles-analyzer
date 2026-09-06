@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/powershell/Modules
-          key: psmodules-${{ runner.os }}-${{ hashFiles('src/__ModuleName__/__ModuleName__.psd1') }}
+          key: psmodules-${{ runner.os }}-${{ hashFiles('src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.psd1') }}
 
       - name: Install PowerShell modules
         shell: pwsh
@@ -30,7 +30,7 @@ jobs:
             if (-not (Get-Module -ListAvailable $m)) { Install-Module $m -Force -Scope CurrentUser -SkipPublisherCheck }
           }
           # Import-Module needs every RequiredModules entry present; read them from the manifest.
-          $manifest = Import-PowerShellDataFile ./src/__ModuleName__/__ModuleName__.psd1
+          $manifest = Import-PowerShellDataFile ./src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.psd1
           foreach ($required in @($manifest.RequiredModules)) {
             $name = if ($required -is [hashtable]) { $required.ModuleName } else { [string]$required }
             if (-not $name) { continue }
@@ -39,7 +39,7 @@ jobs:
 
       - name: Validate manifest
         shell: pwsh
-        run: Test-ModuleManifest ./src/__ModuleName__/__ModuleName__.psd1 | Format-List Name, Version, PowerShellVersion
+        run: Test-ModuleManifest ./src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.psd1 | Format-List Name, Version, PowerShellVersion
 
       - name: Analyze
         shell: pwsh
@@ -68,30 +68,3 @@ jobs:
           name: test-results
           path: TestResults.xml
 
-#>>> automation-only
-  bicep:
-    name: Bicep
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # Pinned: different Bicep versions emit different templates, which would make the drift
-      # check below fail for the wrong reason. Bump here and rebuild azuredeploy.json together.
-      - name: Install Bicep 0.46.1
-        run: az bicep install --version v0.46.1
-
-      - name: Build and compare the compiled template
-        run: |
-          az bicep build -f deploy/main.bicep --outfile /tmp/azuredeploy.json
-          if [ ! -f deploy/azuredeploy.json ]; then
-            echo "deploy/azuredeploy.json is missing; run: az bicep build -f deploy/main.bicep --outfile deploy/azuredeploy.json (Bicep 0.46.1)"
-            exit 1
-          fi
-          strip='walk(if type == "object" then del(.metadata) | del(.templateHash) else . end)'
-          if ! diff -q <(jq -S "$strip" /tmp/azuredeploy.json) <(jq -S "$strip" deploy/azuredeploy.json) > /dev/null; then
-            echo "deploy/azuredeploy.json is stale; run: az bicep build -f deploy/main.bicep --outfile deploy/azuredeploy.json (Bicep 0.46.1)"
-            diff <(jq -S "$strip" /tmp/azuredeploy.json) <(jq -S "$strip" deploy/azuredeploy.json) | head -40
-            exit 1
-          fi
-          echo "azuredeploy.json matches main.bicep"
-#<<< automation-only

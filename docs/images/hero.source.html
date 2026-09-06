@@ -38,8 +38,8 @@
 
   <!-- left: name and promise. Keep the tagline under ~55 characters. -->
   <text x="80" y="150" fill="#38bdf8" font-size="18" font-weight="700" letter-spacing="5">AZURE  ·  POWERSHELL</text>
-  <text x="76" y="230" fill="#ffffff" font-size="72" font-weight="800" letter-spacing="-2">__ModuleName__</text>
-  <text x="80" y="288" fill="#aab4c8" font-size="28" font-weight="400">__Tagline__</text>
+  <text x="76" y="230" fill="#ffffff" font-size="72" font-weight="800" letter-spacing="-2">RiskyRolesAnalyzer</text>
+  <text x="80" y="288" fill="#aab4c8" font-size="28" font-weight="400">Every privileged role assignment in your tenant, including the ones hiding behind groups, custom roles and dormant apps.</text>
   <text x="80" y="330" fill="#6f7d99" font-size="21">Read-only by default · rules you can read · backup before every change</text>
   <text x="80" y="362" fill="#6f7d99" font-size="21">PowerShell Gallery module · MIT</text>
 
@@ -62,11 +62,11 @@
   </g>
   <circle cx="930" cy="180" r="6" fill="#ef4444"/><circle cx="952" cy="180" r="6" fill="#f59e0b"/><circle cx="974" cy="180" r="6" fill="#22c55e"/>
   <g class="mono" font-size="21">
-    <text x="930" y="240" fill="#8fd3ff">PS&gt; </text><text x="985" y="240" fill="#e2e8f0">Install-Module __ModuleName__</text>
-    <text x="930" y="290" fill="#8fd3ff">PS&gt; </text><text x="985" y="290" fill="#e2e8f0">Get-__Noun__ | Format-Table</text>
+    <text x="930" y="240" fill="#8fd3ff">PS&gt; </text><text x="985" y="240" fill="#e2e8f0">Install-Module RiskyRolesAnalyzer</text>
+    <text x="930" y="290" fill="#8fd3ff">PS&gt; </text><text x="985" y="290" fill="#e2e8f0">Get-RiskyRoleAssignment | Format-Table</text>
     <text x="960" y="340" fill="#f59e0b">High</text><text x="1060" y="340" fill="#aab4c8">item-01   privileged and unused</text>
     <text x="960" y="378" fill="#facc15">Medium</text><text x="1060" y="378" fill="#aab4c8">item-02   privileged and in use</text>
-    <text x="930" y="440" fill="#8fd3ff">PS&gt; </text><text x="985" y="440" fill="#e2e8f0">... | Remove-__Noun__ -WhatIf</text>
+    <text x="930" y="440" fill="#8fd3ff">PS&gt; </text><text x="985" y="440" fill="#e2e8f0">... | Remove-RiskyRoleAssignment -WhatIf</text>
   </g>
 </svg>
 </body></html>

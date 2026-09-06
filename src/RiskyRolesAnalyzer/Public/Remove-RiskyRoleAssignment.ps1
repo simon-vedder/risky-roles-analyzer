@@ -1,12 +1,12 @@
-function Remove-__Noun__ {
+function Remove-RiskyRoleAssignment {
     <#
     .SYNOPSIS
-    Remove what a __Noun__ finding points at, after backing it up.
+    Remove what a RiskyRoleAssignment finding points at, after backing it up.
 
     .DESCRIPTION
     Skeleton example of the write path every tool in this family shares:
 
-      - accepts the objects Get-__Noun__ produced, never free-form names
+      - accepts the objects Get-RiskyRoleAssignment produced, never free-form names
       - writes a JSON backup of every object before touching it (-BackupPath)
       - SupportsShouldProcess with ConfirmImpact High: a prompt per object, -WhatIf everywhere
       - refuses objects marked Protected (break-glass, PIM-managed) and reports them instead
@@ -15,33 +15,33 @@ function Remove-__Noun__ {
     real Az or Graph call and keep everything around it.
 
     .PARAMETER InputObject
-    Findings from Get-__Noun__.
+    Findings from Get-RiskyRoleAssignment.
 
     .PARAMETER BackupPath
     JSON file that receives every object before it is removed.
-    Default: ./__ModuleName__-backup-<timestamp>.json in the current directory.
+    Default: ./RiskyRolesAnalyzer-backup-<timestamp>.json in the current directory.
 
     .EXAMPLE
-    Get-__Noun__ -MinimumSeverity High | Remove-__Noun__ -WhatIf
+    Get-RiskyRoleAssignment -MinimumSeverity High | Remove-RiskyRoleAssignment -WhatIf
 
     .EXAMPLE
-    Get-__Noun__ | Out-ConsoleGridView -PassThru | Remove-__Noun__
+    Get-RiskyRoleAssignment | Out-ConsoleGridView -PassThru | Remove-RiskyRoleAssignment
 
     .OUTPUTS
-    __ModuleName__.__Noun__Removal
+    RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval
 
     .NOTES
     Required permissions: write. Name the exact scope or action here; the read path must not need it.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
-    [OutputType('__ModuleName__.__Noun__Removal')]
+    [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval')]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
-        [PSTypeName('__ModuleName__.__Noun__')]
+        [PSTypeName('RiskyRolesAnalyzer.RiskyRoleAssignment')]
         [object[]]$InputObject,
 
         [Parameter()]
-        [string]$BackupPath = (Join-Path (Get-Location) ('__ModuleName__-backup-{0:yyyyMMdd-HHmmss}.json' -f (Get-Date)))
+        [string]$BackupPath = (Join-Path (Get-Location) ('RiskyRolesAnalyzer-backup-{0:yyyyMMdd-HHmmss}.json' -f (Get-Date)))
     )
 
     begin {
@@ -66,7 +66,7 @@ function Remove-__Noun__ {
                 continue
             }
 
-            if (-not $PSCmdlet.ShouldProcess($item.Name, 'Remove __Noun__')) {
+            if (-not $PSCmdlet.ShouldProcess($item.Name, 'Remove RiskyRoleAssignment')) {
                 & $removal -Name $item.Name -Result 'Skipped' -Reason 'Declined or -WhatIf'
                 continue
             }

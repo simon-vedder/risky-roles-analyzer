@@ -1,4 +1,4 @@
-function Resolve-__Noun__Finding {
+function Resolve-RiskyRoleAssignmentFinding {
     <#
     .SYNOPSIS
     Pure decision function: raw facts in, one typed finding out.
@@ -8,7 +8,7 @@ function Resolve-__Noun__Finding {
     keep the shape: input object, output object with PSTypeName, Severity and Reason.
     #>
     [CmdletBinding()]
-    [OutputType('__ModuleName__.__Noun__')]
+    [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignment')]
     param(
         [Parameter(Mandatory)]
         $InputObject
