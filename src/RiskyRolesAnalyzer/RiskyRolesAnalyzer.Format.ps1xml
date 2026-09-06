@@ -63,5 +63,31 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>RiskyRolesAnalyzer.RiskyRoleAssignmentRestore</Name>
+      <ViewSelectedBy>
+        <TypeName>RiskyRolesAnalyzer.RiskyRoleAssignmentRestore</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Result</Label><Width>8</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Where</Label><Width>5</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Role</Label><Width>28</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Principal</Label><Width>30</Width></TableColumnHeader>
+          <TableColumnHeader><Label>Reason</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Result</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>RoleScope</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>RoleName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>PrincipalName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Reason</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

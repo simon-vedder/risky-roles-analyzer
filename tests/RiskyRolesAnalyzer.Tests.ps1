@@ -67,6 +67,7 @@ BeforeAll {
             'u-carol'        = @{ '@odata.type' = '#microsoft.graph.user'; id = 'u-carol'; displayName = 'Carol PIM'; userPrincipalName = 'carol@contoso.com'; accountEnabled = $true }
             'u-glass'        = @{ '@odata.type' = '#microsoft.graph.user'; id = 'u-glass'; displayName = 'Break Glass'; userPrincipalName = 'breakglass@contoso.com'; accountEnabled = $true }
             'u-me'           = @{ '@odata.type' = '#microsoft.graph.user'; id = 'u-me'; displayName = 'Me'; userPrincipalName = 'me@contoso.com'; accountEnabled = $true }
+            'u-dave'         = @{ '@odata.type' = '#microsoft.graph.user'; id = 'u-dave'; displayName = 'Dave Activated'; userPrincipalName = 'dave@contoso.com'; accountEnabled = $true }
             'g-admins'       = @{ '@odata.type' = '#microsoft.graph.group'; id = 'g-admins'; displayName = 'Cloud Admins' }
             'g-nested'       = @{ '@odata.type' = '#microsoft.graph.group'; id = 'g-nested'; displayName = 'Nested Admins' }
             'sp-app-dormant' = @{ '@odata.type' = '#microsoft.graph.servicePrincipal'; id = 'sp-app-dormant'; displayName = 'Legacy Deploy App'; appId = 'app-dormant'; servicePrincipalType = 'Application'; accountEnabled = $true; disabledByMicrosoftStatus = $null }
@@ -125,10 +126,23 @@ BeforeAll {
             @{ id = 'ra-7'; principalId = 'u-alice'; roleDefinitionId = 'rd-dr'; directoryScopeId = '/' }
             @{ id = 'ra-8'; principalId = 'sp-app-off'; roleDefinitionId = 'rd-caa'; directoryScopeId = '/' }
             @{ id = 'ra-9'; principalId = 'u-alice'; roleDefinitionId = 'rd-custom-ok'; directoryScopeId = '/' }
+            @{ id = 'ra-10'; principalId = 'u-dave'; roleDefinitionId = 'rd-ga'; directoryScopeId = '/' }
+        )
+        Schedules = @(
+            @{ id = 'ras-1'; principalId = 'u-dave'; roleDefinitionId = 'rd-ga'; directoryScopeId = '/'; assignmentType = 'Activated' }
+            @{ id = 'ras-2'; principalId = 'u-alice'; roleDefinitionId = 'rd-ga'; directoryScopeId = '/'; assignmentType = 'Assigned' }
         )
         Eligible = @(
             @{ id = 're-1'; principalId = 'u-carol'; roleDefinitionId = 'rd-ga'; directoryScopeId = '/' }
         )
+    }
+
+    function Select-FirstTwo {
+        # Stand-in for Out-ConsoleGridView: same parameters, picks the first two rows.
+        param([Parameter(ValueFromPipeline)]$InputObject, [string]$Title, [string]$OutputMode)
+        begin { $rows = [System.Collections.Generic.List[object]]::new() }
+        process { $rows.Add($InputObject) }
+        end { $rows | Select-Object -First 2 }
     }
 
     $script:GraphCalls = [System.Collections.Generic.List[object]]::new()
@@ -138,6 +152,7 @@ BeforeAll {
         param($Method, $Uri)
         $script:GraphCalls.Add(@{ Method = [string]$Method; Uri = [string]$Uri })
         if ([string]$Method -eq 'DELETE') { return $null }
+        if ([string]$Method -eq 'POST') { return @{ id = 'ra-new' } }
         $u = [string]$Uri
         if ($u -match '/v1\.0/applications\?') { return @{ value = $Fixture.Applications } }
         if ($u -match '/beta/applications\?') { return @{ value = $Fixture.ApplicationFlags } }
@@ -151,7 +166,11 @@ BeforeAll {
         if ($u -match '/servicePrincipals/([^/?]+)') { $o = $Fixture.Objects[$Matches[1]]; return @{ accountEnabled = $o.accountEnabled; disabledByMicrosoftStatus = $o.disabledByMicrosoftStatus; appId = $o.appId; servicePrincipalType = $o.servicePrincipalType } }
         if ($u -match '/groups/([^/]+)/members') { return @{ value = $Fixture.Members[$Matches[1]] } }
         if ($u -match '/roleManagement/directory/roleDefinitions') { return @{ value = $Fixture.RoleDefinitions } }
-        if ($u -match '/roleManagement/directory/roleAssignments') { return @{ value = $Fixture.RoleAssignments } }
+        if ($u -match '/roleManagement/directory/roleAssignmentSchedules') {
+            if ($script:FailEligibility) { throw '403 Forbidden: AadPremiumLicenseRequired' }
+            return @{ value = $Fixture.Schedules }
+        }
+        if ($u -match '/roleManagement/directory/roleAssignments(\?|$)') { return @{ value = $Fixture.RoleAssignments } }
         if ($u -match '/roleManagement/directory/roleEligibilitySchedules') {
             if ($script:FailEligibility) { throw '403 Forbidden: AadPremiumLicenseRequired' }
             return @{ value = $Fixture.Eligible }
@@ -509,9 +528,9 @@ Describe 'Collectors against the synthetic tenant' {
         BeforeAll { $all = @(Get-RiskyRoleAssignment -BreakGlassAccount 'breakglass@contoso.com' -WarningAction SilentlyContinue) }
 
         It 'finds every privileged assignment once' {
-            $all.Count | Should -Be 15
+            $all.Count | Should -Be 16
             @($all | Where-Object RoleScope -eq 'Azure').Count | Should -Be 7
-            @($all | Where-Object RoleScope -eq 'Entra').Count | Should -Be 8
+            @($all | Where-Object RoleScope -eq 'Entra').Count | Should -Be 9
         }
         It 'returns typed, sorted findings' {
             $all[0].PSObject.TypeNames[0] | Should -Be 'RiskyRolesAnalyzer.RiskyRoleAssignment'
@@ -559,7 +578,15 @@ Describe 'Collectors against the synthetic tenant' {
             ($all | Where-Object PrincipalId -eq 'u-carol').ProtectedReason | Should -Match 'PIM'
             ($all | Where-Object PrincipalId -eq 'u-glass').ProtectedReason | Should -Be 'Break-glass account'
             ($all | Where-Object PrincipalId -eq 'u-me').ProtectedReason | Should -Be 'Identity running this audit'
-            @($all | Where-Object Protected).Count | Should -Be 5
+            @($all | Where-Object Protected).Count | Should -Be 6
+        }
+        It 'types a PIM activation as Activated and protects it' {
+            $dave = $all | Where-Object PrincipalId -eq 'u-dave'
+            $dave.AssignmentType | Should -Be 'Activated'
+            $dave.Severity | Should -Be 'Critical'
+            $dave.ProtectedReason | Should -Match 'PIM activation'
+            $dave.CleanupPrimary | Should -Match 'Deactivate'
+            ($all | Where-Object { $_.PrincipalId -eq 'u-alice' -and $_.RoleName -eq 'Global Administrator' }).AssignmentType | Should -Be 'Permanent'
         }
         It 'carries the assignment id Remove- needs' {
             ($all | Where-Object { $_.PrincipalId -eq 'u-alice' -and $_.RoleName -eq 'Global Administrator' }).AssignmentId | Should -Be 'ra-1'
@@ -576,12 +603,12 @@ Describe 'Collectors against the synthetic tenant' {
         It 'honours -SkipAzure without touching Az' {
             $entra = @(Get-RiskyRoleAssignment -SkipAzure -WarningAction SilentlyContinue)
             @($entra | Where-Object RoleScope -eq 'Azure').Count | Should -Be 0
-            $entra.Count | Should -Be 8
+            $entra.Count | Should -Be 9
             Should -Invoke -ModuleName RiskyRolesAnalyzer Get-AzSubscription -Times 0 -Exactly -Scope It
         }
         It 'honours -SkipEntra and -SkipPim' {
             @(Get-RiskyRoleAssignment -SkipEntra -WarningAction SilentlyContinue).Count | Should -Be 7
-            @(Get-RiskyRoleAssignment -SkipAzure -SkipPim | Where-Object AssignmentType -eq 'Eligible').Count | Should -Be 0
+            @(Get-RiskyRoleAssignment -SkipAzure -SkipPim | Where-Object AssignmentType -in 'Eligible', 'Activated').Count | Should -Be 0
         }
         It 'limits Azure to the named subscription' {
             $prod = @(Get-RiskyRoleAssignment -SkipEntra -SubscriptionId 'SUB-1' -WarningAction SilentlyContinue)
@@ -595,8 +622,8 @@ Describe 'Collectors against the synthetic tenant' {
         It 'warns and continues when PIM is not available' {
             $script:FailEligibility = $true
             $result = @(Get-RiskyRoleAssignment -SkipAzure -WarningVariable warnings -WarningAction SilentlyContinue)
-            @($result | Where-Object AssignmentType -eq 'Eligible').Count | Should -Be 0
-            $result.Count | Should -Be 7
+            @($result | Where-Object AssignmentType -in 'Eligible', 'Activated').Count | Should -Be 0
+            $result.Count | Should -Be 8
             @($warnings | Where-Object { $_ -match 'PIM eligible assignments skipped' }).Count | Should -Be 1
         }
         It 'refuses to run with both sources skipped' {
@@ -642,6 +669,167 @@ Describe 'Collectors against the synthetic tenant' {
             $null = Connect-RiskyRolesAnalyzer -SkipAzure
             Should -Invoke -ModuleName RiskyRolesAnalyzer Connect-AzAccount -Times 1 -Exactly -Scope It
         }
+    }
+}
+
+Describe 'ConvertTo-RiskyRoleReportHtml' {
+    BeforeAll {
+        $Render = & $module { Get-Command ConvertTo-RiskyRoleReportHtml }
+        $sample = @(
+            (New-Finding @{ Source = @{ marker = 'RAW-SOURCE-MUST-NOT-LEAK' } }),
+            (New-Finding @{ RoleScope = 'Entra'; RoleName = 'Global Administrator'; RoleDefinitionId = 'rd-ga'; Scope = '/'; AssignmentType = 'Eligible'; AssignmentId = 're-1'; Principal = (New-Principal @{ ObjectId = 'p-2'; DisplayName = 'Carol </script><b>x' }) })
+        )
+    }
+
+    It 'is one self-contained page with the findings embedded as JSON' {
+        $html = & $Render -InputObject $sample -TenantId 'tenant-1' -Title 'Contoso audit' -GeneratedAt ([datetime]'2026-09-06T10:00:00')
+        $html | Should -Match '^<!DOCTYPE html>'
+        $html | Should -Match '<title>Contoso audit</title>'
+        $html | Should -Match '"tenantId":"tenant-1"'
+        $html | Should -Match '"generated":"2026-09-06 10:00:00"'
+        $html | Should -Match '"count":2'
+        $html | Should -Match ('"Id":"{0}"' -f $sample[0].Id)
+        $html | Should -Not -Match '__DATA__|__META__|__TITLE__'
+        $html | Should -Not -Match 'https?://(?!simonvedder\.com)'   # no external resources
+    }
+    It 'leaves the raw Source objects out and escapes closing tags inside the data' {
+        $html = & $Render -InputObject $sample -TenantId 't'
+        $html | Should -Not -Match 'RAW-SOURCE-MUST-NOT-LEAK'
+        $html | Should -Not -Match 'Carol </script>'
+        $html | Should -Match 'Carol <\\/script>'
+    }
+    It 'renders an empty report for no findings' {
+        $html = & $Render -InputObject @() -TenantId ''
+        $html | Should -Match 'const DATA = \[\];'
+        $html | Should -Match '"count":0'
+    }
+    It 'keeps risky actions as an array and the protected flag as a boolean' {
+        $custom = New-Finding @{ IsCustomRole = $true; RiskyAction = @('Microsoft.Authorization/roleAssignments/write', 'Microsoft.Authorization/elevateAccess/action') }
+        $html = & $Render -InputObject @($custom) -TenantId 't'
+        $html | Should -Match '"RiskyActions":\["Microsoft.Authorization/roleAssignments/write","Microsoft.Authorization/elevateAccess/action"\]'
+        $html | Should -Match '"Protected":false'
+    }
+}
+
+Describe 'Export-RiskyRoleReport' {
+    BeforeAll {
+        Mock -ModuleName RiskyRolesAnalyzer Get-MgContext { [pscustomobject]@{ TenantId = 'tenant-1'; Account = 'me@contoso.com'; Scopes = @() } }
+    }
+    BeforeEach {
+        $reportPath = Join-Path $TestDrive 'report.html'
+        Remove-Item -Path $reportPath -Force -ErrorAction SilentlyContinue
+    }
+
+    It 'writes the file and returns it' {
+        $file = New-Finding | Export-RiskyRoleReport -Path $reportPath
+        $file | Should -BeOfType System.IO.FileInfo
+        $file.Length | Should -BeGreaterThan 10000
+        Get-Content $reportPath -Raw | Should -Match '"tenantId":"tenant-1"'
+    }
+    It 'writes nothing under -WhatIf' {
+        $result = New-Finding | Export-RiskyRoleReport -Path $reportPath -WhatIf
+        $result | Should -BeNullOrEmpty
+        Test-Path $reportPath | Should -BeFalse
+    }
+    It 'takes an explicit tenant and title' {
+        $null = @((New-Finding), (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-9'; DisplayName = 'Nine' }) })) | Export-RiskyRoleReport -Path $reportPath -TenantId 'custom-tenant' -Title 'My & audit'
+        $content = Get-Content $reportPath -Raw
+        $content | Should -Match '"tenantId":"custom-tenant"'
+        $content | Should -Match '<title>My &amp; audit</title>'
+        $content | Should -Match '"count":2'
+    }
+    It 'rejects objects that did not come from Get-RiskyRoleAssignment' {
+        { [pscustomobject]@{ Name = 'raw' } | Export-RiskyRoleReport -Path $reportPath -ErrorAction Stop } | Should -Throw
+    }
+}
+
+Describe 'Show-RiskyRoleAssignment' {
+    It 'returns the original findings for the rows picked in the grid' {
+        Mock -ModuleName RiskyRolesAnalyzer Get-RiskyRoleGridCommand { Get-Command Select-FirstTwo }
+        $findings = @(
+            (New-Finding),
+            (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-2'; DisplayName = 'Two' }) }),
+            (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-3'; DisplayName = 'Three' }) })
+        )
+        $picked = @($findings | Show-RiskyRoleAssignment)
+        $picked.Count | Should -Be 2
+        $picked[0].PSObject.TypeNames[0] | Should -Be 'RiskyRolesAnalyzer.RiskyRoleAssignment'
+        $picked[1].PrincipalName | Should -Be 'Two'
+        $picked[0].CleanupPrimary | Should -Not -BeNullOrEmpty -Because 'the original object comes back, not the projection'
+    }
+    It 'explains what to install when no grid exists' {
+        Mock -ModuleName RiskyRolesAnalyzer Get-RiskyRoleGridCommand { $null }
+        { New-Finding | Show-RiskyRoleAssignment } | Should -Throw '*ConsoleGuiTools*'
+    }
+    It 'returns nothing for no input' {
+        @($null | Show-RiskyRoleAssignment -ErrorAction SilentlyContinue).Count | Should -Be 0
+    }
+}
+
+Describe 'Restore-RiskyRoleAssignment' {
+    BeforeAll {
+        Mock -ModuleName RiskyRolesAnalyzer Invoke-MgGraphRequest { Invoke-FixtureGraph -Method $Method -Uri $Uri }
+        Mock -ModuleName RiskyRolesAnalyzer Remove-AzRoleAssignment { $null }
+        Mock -ModuleName RiskyRolesAnalyzer New-AzRoleAssignment { $null }
+        $script:WriteScope = $false
+        Mock -ModuleName RiskyRolesAnalyzer Get-MgContext {
+            $scopes = @('RoleManagement.Read.Directory', 'Directory.Read.All', 'Group.Read.All', 'Application.Read.All')
+            if ($script:WriteScope) { $scopes += 'RoleManagement.ReadWrite.Directory' }
+            [pscustomobject]@{ TenantId = 'tenant-1'; Account = 'me@contoso.com'; Scopes = $scopes }
+        }
+    }
+    BeforeEach {
+        $backupPath = Join-Path $TestDrive 'restore-backup.json'
+        Remove-Item -Path $backupPath -Force -ErrorAction SilentlyContinue
+        $script:GraphCalls.Clear()
+        $script:WriteScope = $true
+    }
+
+    It 'restores what Remove- backed up, from the file' {
+        $azure = New-Finding
+        $entra = New-Finding @{ RoleScope = 'Entra'; RoleName = 'Global Administrator'; RoleDefinitionId = 'rd-ga'; Scope = '/'; AssignmentId = 'ra-1'; Principal = (New-Principal @{ ObjectId = 'p-2'; DisplayName = 'Two' }) }
+        $null = @($azure, $entra) | Remove-RiskyRoleAssignment -BackupPath $backupPath -Confirm:$false
+        $result = @(Restore-RiskyRoleAssignment -Path $backupPath -Confirm:$false)
+        $result.Count | Should -Be 2
+        $result.Result | Should -Be @('Restored', 'Restored')
+        $result[0].PSObject.TypeNames[0] | Should -Be 'RiskyRolesAnalyzer.RiskyRoleAssignmentRestore'
+        Should -Invoke -ModuleName RiskyRolesAnalyzer New-AzRoleAssignment -Times 1 -Exactly -Scope It -ParameterFilter {
+            $ObjectId -eq 'p-1' -and $RoleDefinitionId -eq '8e3af657-a8ff-443c-a75c-2fe8c4bcb635' -and $Scope -eq '/subscriptions/00000000-0000-0000-0000-000000000001'
+        }
+        $post = @($script:GraphCalls | Where-Object { $_.Method -eq 'POST' -and $_.Uri -like '*/roleManagement/directory/roleAssignments' })
+        $post.Count | Should -Be 1
+    }
+    It 'does nothing under -WhatIf' {
+        New-Finding | Remove-RiskyRoleAssignment -BackupPath $backupPath -Confirm:$false | Out-Null
+        $result = Restore-RiskyRoleAssignment -Path $backupPath -WhatIf
+        $result.Result | Should -Be 'Skipped'
+        Should -Invoke -ModuleName RiskyRolesAnalyzer New-AzRoleAssignment -Times 0 -Exactly -Scope It
+    }
+    It 'skips PIM, group-inherited and incomplete entries' {
+        $entries = @(
+            [pscustomobject]@{ Id = 'a'; RoleScope = 'Entra'; RoleName = 'GA'; RoleDefinitionId = 'rd-ga'; Scope = '/'; PrincipalId = 'p'; PrincipalName = 'P'; AssignmentType = 'Eligible'; ViaGroupId = $null; ScopeDetail = 'Tenant-wide' }
+            [pscustomobject]@{ Id = 'b'; RoleScope = 'Azure'; RoleName = 'Owner'; RoleDefinitionId = 'x'; Scope = '/subscriptions/s'; PrincipalId = 'p'; PrincipalName = 'P'; AssignmentType = 'Permanent'; ViaGroupId = 'g'; ScopeDetail = 'Subscription' }
+            [pscustomobject]@{ Id = 'c'; RoleScope = 'Azure'; RoleName = 'Owner'; RoleDefinitionId = ''; Scope = '/subscriptions/s'; PrincipalId = 'p'; PrincipalName = 'P'; AssignmentType = 'Permanent'; ViaGroupId = $null; ScopeDetail = 'Subscription' }
+            [pscustomobject]@{ Id = 'd'; RoleScope = 'Entra'; RoleName = 'GA'; RoleDefinitionId = 'rd-ga'; Scope = '/'; PrincipalId = 'p'; PrincipalName = 'P'; AssignmentType = 'Activated'; ViaGroupId = $null; ScopeDetail = 'Tenant-wide' }
+        )
+        $result = @($entries | Restore-RiskyRoleAssignment -Confirm:$false)
+        $result.Result | Should -Be @('Skipped', 'Skipped', 'Skipped', 'Skipped')
+        $result[0].Reason | Should -Match 'PIM'
+        $result[1].Reason | Should -Match 'group'
+        $result[2].Reason | Should -Match 'lacks'
+        Should -Invoke -ModuleName RiskyRolesAnalyzer New-AzRoleAssignment -Times 0 -Exactly -Scope It
+    }
+    It 'refuses an Entra restore without the write scope' {
+        $script:WriteScope = $false
+        $entry = [pscustomobject]@{ Id = 'a'; RoleScope = 'Entra'; RoleName = 'GA'; RoleDefinitionId = 'rd-ga'; Scope = '/'; PrincipalId = 'p'; PrincipalName = 'P'; AssignmentType = 'Permanent'; ViaGroupId = $null; ScopeDetail = 'Tenant-wide' }
+        { $entry | Restore-RiskyRoleAssignment -Confirm:$false } | Should -Throw '*RequestWriteScopes*'
+        @($script:GraphCalls | Where-Object Method -eq 'POST').Count | Should -Be 0
+    }
+    It 'reports a failed call' {
+        Mock -ModuleName RiskyRolesAnalyzer New-AzRoleAssignment { throw 'RoleAssignmentExists' }
+        $result = New-Finding | Select-Object -Property * -ExcludeProperty Source | Restore-RiskyRoleAssignment -Confirm:$false -ErrorAction SilentlyContinue
+        $result.Result | Should -Be 'Failed'
+        $result.Reason | Should -Match 'RoleAssignmentExists'
     }
 }
 

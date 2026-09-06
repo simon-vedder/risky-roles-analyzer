@@ -6,9 +6,10 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
 ## Behaviour
 
 - *(to verify)* An **activated PIM assignment** appears in `roleManagement/directory/roleAssignments`
-  like a permanent one. The module cannot tell the two apart yet and reports the activation as
-  `Permanent`. Removing it through `Remove-RiskyRoleAssignment` ends the activation, the
-  eligibility stays. The fix is `roleAssignmentSchedules` with its `assignmentType`, planned.
+  like a permanent one. The module reads `roleAssignmentSchedules` and types the ones it reports as
+  `Activated`, which are protected. Whether every activation shows up there with the same
+  `directoryScopeId` as in `roleAssignments` is on the lab list; until then an activation the
+  schedules miss reads as `Permanent`, and removing it would end the activation, not the eligibility.
 - *(Microsoft)* The app registration **Deactivated** toggle (`isDisabled`) is only exposed on the
   Graph `/beta` endpoint. When that call fails the module warns and treats those apps as active.
 - *(Microsoft)* **PIM eligible** assignments (`roleEligibilitySchedules`) need Entra ID P2. Without
@@ -26,6 +27,8 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
 
 - *(observed)* `Import-Module RiskyRolesAnalyzer` pulls in `Az.Resources`, which takes a few
   seconds on first import.
-- *(observed)* `Out-ConsoleGridView` is not a dependency; install
-  `Microsoft.PowerShell.ConsoleGuiTools` to use the pick-and-remove pipeline from the README on
-  macOS or Linux. On Windows, `Out-GridView` works the same way.
+- *(observed)* `Out-ConsoleGridView` is not a dependency; `Show-RiskyRoleAssignment` explains what
+  to install when no grid is available (`Microsoft.PowerShell.ConsoleGuiTools` on macOS, Linux or
+  Windows; `Out-GridView` ships with PowerShell on Windows).
+- *(to verify)* The report's **Copy** buttons use the browser clipboard API, which some browsers
+  refuse for `file://` pages. The command is always shown in full, so select-and-copy works regardless.

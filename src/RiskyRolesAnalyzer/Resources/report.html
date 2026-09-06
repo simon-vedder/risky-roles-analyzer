@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #273449; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --ok: #22c55e; --warn: #f59e0b; --err: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  header { padding: 24px 32px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 600; letter-spacing: -0.2px; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .eyebrow { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 20px 32px; border-bottom: 1px solid var(--border); }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; }
+  .stat-value { font-size: 22px; font-weight: 600; margin-top: 4px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 32px; border-bottom: 1px solid var(--border); background: var(--panel); align-items: center; }
+  .controls input, .controls select, .controls button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; font-size: 13px; font-family: inherit; }
+  .controls input { min-width: 240px; }
+  .controls input:focus, .controls select:focus { outline: none; border-color: var(--accent); }
+  .controls button { cursor: pointer; font-weight: 500; }
+  .controls button:hover { background: var(--panel); }
+  .controls button.primary { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+  .controls button.primary:hover { background: #0ea5e9; }
+  .controls button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .toggle-btn[data-active="true"] { background: var(--accent) !important; color: #0f172a !important; border-color: var(--accent) !important; font-weight: 600 !important; }
+  .controls .count { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .selection-bar { display: flex; gap: 10px; padding: 10px 32px; border-bottom: 1px solid var(--border); background: rgba(56,189,248,0.06); align-items: center; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .selection-bar button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .selection-bar button.primary { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
+  .selection-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .table-wrap { padding: 0 32px 32px 32px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  thead th { text-align: left; padding: 10px 12px; background: var(--panel); border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; }
+  thead th:hover { color: var(--text); }
+  thead th.sorted-asc::after  { content: ' \25B2'; color: var(--accent); }
+  thead th.sorted-desc::after { content: ' \25BC'; color: var(--accent); }
+  thead th.nosort { cursor: default; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover { background: rgba(56,189,248,0.04); }
+  tbody tr.selected { background: rgba(56,189,248,0.10); }
+  tr.accepted { opacity: 0.45; }
+  tr.accepted td { text-decoration: line-through; text-decoration-color: rgba(148,163,184,0.4); }
+  tr.accepted td.select-cell, tr.accepted td.accept-cell { text-decoration: none; }
+  .select-cell, .accept-cell { text-align: center; }
+  .select-cb, .accept-cb { width: 17px; height: 17px; cursor: pointer; }
+  .select-cb { accent-color: var(--accent); }
+  .select-cb:disabled { cursor: not-allowed; opacity: 0.35; }
+  .accept-cb { accent-color: var(--ok); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+  .badge-User            { background: rgba(96,165,250,0.15);  color: #93c5fd; border-color: rgba(96,165,250,0.4); }
+  .badge-Group           { background: rgba(167,139,250,0.15); color: #c4b5fd; border-color: rgba(167,139,250,0.4); }
+  .badge-EnterpriseApp, .badge-AppRegistration { background: rgba(244,114,182,0.15); color: #f9a8d4; border-color: rgba(244,114,182,0.4); }
+  .badge-ManagedIdentity { background: rgba(251,146,60,0.15);  color: #fdba74; border-color: rgba(251,146,60,0.4); }
+  .badge-Other, .badge-Unknown { background: rgba(148,163,184,0.15); color: #cbd5e1; border-color: rgba(148,163,184,0.4); }
+  .badge-Permanent       { background: rgba(34,197,94,0.15);   color: #86efac; border-color: rgba(34,197,94,0.4); }
+  .badge-Eligible        { background: rgba(245,158,11,0.15);  color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+  .badge-Activated       { background: rgba(251,146,60,0.18);  color: #fdba74; border-color: rgba(251,146,60,0.45); }
+  .badge-Azure           { background: rgba(56,189,248,0.15);  color: #7dd3fc; border-color: rgba(56,189,248,0.4); }
+  .badge-Entra           { background: rgba(129,140,248,0.15); color: #a5b4fc; border-color: rgba(129,140,248,0.4); }
+  .badge-status-Active             { background: rgba(34,197,94,0.15); color: #86efac; border-color: rgba(34,197,94,0.4); }
+  .badge-status-Disabled           { background: rgba(239,68,68,0.18); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+  .badge-status-NoValidCredential  { background: rgba(245,158,11,0.18); color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+  .badge-status-BlockedByMicrosoft { background: rgba(239,68,68,0.25); color: #fecaca; border-color: rgba(239,68,68,0.6); }
+  .badge-status-Unknown            { background: rgba(148,163,184,0.15); color: #cbd5e1; border-color: rgba(148,163,184,0.4); }
+  .badge-protected { background: rgba(167,139,250,0.15); color: #c4b5fd; border-color: rgba(167,139,250,0.4); }
+  .status-reason, .protected-reason { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .mono { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .identity-upn { font-size: 11px; margin-top: 2px; color: #cbd5e1; }
+  .identity-id  { font-size: 10px; margin-top: 1px; color: var(--muted); opacity: 0.7; }
+  .via { font-size: 11px; color: var(--warn); margin-top: 3px; }
+  .empty { padding: 60px; text-align: center; color: var(--muted); }
+  .report-footer { text-align: center; padding: 20px 32px 28px 32px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 8px; }
+  .report-footer a { color: var(--accent); text-decoration: none; }
+  .report-footer a:hover { text-decoration: underline; }
+  .report-footer strong { color: var(--text); font-weight: 600; }
+  .custom-flag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: rgba(239,68,68,0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); font-size: 10px; font-weight: 700; letter-spacing: 0.4px; vertical-align: middle; }
+  .actions-cell { max-width: 380px; }
+  .action-pill { display: inline-block; padding: 2px 6px; margin: 1px 2px; border-radius: 4px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 10px; word-break: break-all; }
+  .score { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-align: center; white-space: nowrap; }
+  .score-Critical { background: rgba(239,68,68,0.2);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); }
+  .score-High     { background: rgba(245,158,11,0.18); color: #fcd34d; border: 1px solid rgba(245,158,11,0.45); }
+  .score-Medium   { background: rgba(56,189,248,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.4); }
+  .score-Low      { background: rgba(34,197,94,0.15);  color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
+  .score-Info     { background: rgba(148,163,184,0.15); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.4); }
+  .score-number { font-size: 10px; color: var(--muted); margin-top: 3px; font-family: 'SF Mono', Menlo, Consolas, monospace; }
+  .scope-Root, .scope-Tenant, .scope-ManagementGroup { color: #fca5a5; font-weight: 600; }
+  .scope-Subscription { color: #fcd34d; font-weight: 600; }
+  .scope-ResourceGroup { color: #7dd3fc; }
+  .scope-Resource, .scope-Object { color: #86efac; }
+  .scope-AdminUnit { color: #c4b5fd; }
+  .scope-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .small-btn { background: var(--panel2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; font-family: inherit; }
+  .small-btn:hover { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+  .small-btn.copied { background: var(--ok); color: #0f172a; border-color: var(--ok); }
+  .popup { position: fixed; z-index: 1000; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 720px; width: min(720px, calc(100vw - 40px)); display: none; }
+  .popup pre { background: #0a0f1c; border: 1px solid var(--border); border-radius: 4px; padding: 10px; margin: 6px 0; font-size: 11px; overflow-x: auto; color: #e2e8f0; white-space: pre-wrap; word-break: break-all; }
+  .popup h4 { margin: 0 0 8px 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .popup .close { float: right; cursor: pointer; color: var(--muted); padding: 0 4px; }
+  .popup .close:hover { color: var(--text); }
+  .popup code { background: rgba(56,189,248,0.12); color: #7dd3fc; padding: 1px 5px; border-radius: 3px; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 11px; }
+  .popup .note { font-size: 12px; color: var(--muted); margin: 4px 0 8px 0; }
+  .prereq-box { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; color: #e2e8f0; }
+  .prereq-title { font-size: 10px; color: #fcd34d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="eyebrow">RiskyRolesAnalyzer</div>
+    <h1 id="title">__TITLE__</h1>
+    <div class="subtitle" id="subtitle"></div>
+  </div>
+  <div class="subtitle" id="legend">Score 0 to 10 expresses live exploitability. Protected rows are reported, never removed by the module.</div>
+</header>
+<section class="summary" id="summary"></section>
+<section class="controls">
+  <input type="text" id="search" placeholder="Search anything (name, role, scope, UPN, AppId, Id)...">
+  <select id="filterScope">
+    <option value="">All sources</option>
+    <option value="Azure">Azure RBAC</option>
+    <option value="Entra">Entra ID</option>
+  </select>
+  <select id="filterAssignment">
+    <option value="">All assignment types</option>
+    <option value="Permanent">Permanent</option>
+    <option value="Activated">Activated (PIM)</option>
+    <option value="Eligible">Eligible (PIM)</option>
+  </select>
+  <select id="filterPrincipal">
+    <option value="">All principal types</option>
+    <option value="User">Users</option>
+    <option value="Group">Groups</option>
+    <option value="EnterpriseApp">Enterprise Apps</option>
+    <option value="AppRegistration">App Registrations</option>
+    <option value="ManagedIdentity">Managed Identities</option>
+  </select>
+  <select id="filterRole"><option value="">All roles</option></select>
+  <select id="filterVia">
+    <option value="">Direct &amp; via group</option>
+    <option value="direct">Direct only</option>
+    <option value="group">Via group only</option>
+  </select>
+  <select id="filterCustom">
+    <option value="">Built-in &amp; custom</option>
+    <option value="custom">Custom only</option>
+    <option value="builtin">Built-in only</option>
+  </select>
+  <select id="filterStatus">
+    <option value="">All activity statuses</option>
+    <option value="Active">Active only</option>
+    <option value="inactive">Inactive only (disabled / no creds / blocked)</option>
+    <option value="Disabled">Disabled</option>
+    <option value="NoValidCredential">No valid credential</option>
+    <option value="BlockedByMicrosoft">Blocked by Microsoft</option>
+  </select>
+  <select id="filterSeverity">
+    <option value="">Any severity</option>
+    <option value="Critical">Critical only</option>
+    <option value="High">High &amp; above</option>
+    <option value="Medium">Medium &amp; above</option>
+    <option value="Low">Low &amp; above</option>
+  </select>
+  <select id="filterProtected">
+    <option value="">Protected &amp; removable</option>
+    <option value="removable">Removable only</option>
+    <option value="protected">Protected only</option>
+  </select>
+  <button id="toggleAccepted" class="toggle-btn" data-active="false">Show accepted</button>
+  <button id="exportCsv">Export CSV</button>
+  <span class="count" id="count"></span>
+</section>
+<section class="selection-bar">
+  <span id="selectionCount">0 selected</span>
+  <button id="selectVisible">Select visible</button>
+  <button id="clearSelection">Clear</button>
+  <button id="copyRemoval" class="primary" disabled>Copy removal command</button>
+  <span>The command runs in your PowerShell session, with a prompt and a backup per assignment. Nothing runs from this page.</span>
+</section>
+<section class="table-wrap">
+  <table id="data">
+    <thead>
+      <tr>
+        <th class="nosort" title="Select for the removal command">Select</th>
+        <th data-key="RiskScore">Severity</th>
+        <th data-key="RoleScope">Source</th>
+        <th data-key="RoleName">Role</th>
+        <th data-key="AssignmentType">Type</th>
+        <th data-key="PrincipalType">Principal</th>
+        <th data-key="PrincipalName">Identity</th>
+        <th data-key="ActivityStatus">Status</th>
+        <th data-key="ScopeLevel">Scope</th>
+        <th data-key="ViaGroup">Via</th>
+        <th data-key="Protected">Protected</th>
+        <th class="nosort">Risky Actions</th>
+        <th class="nosort">Cleanup</th>
+        <th class="nosort" title="Mark as reviewed; hides the row">Accept</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">No matching findings</div>
+</section>
+<footer class="report-footer">
+  Generated by <strong>RiskyRolesAnalyzer</strong> <span id="version"></span> &nbsp;&middot;&nbsp;
+  <a href="https://simonvedder.com/tools/risky-roles-analyzer" target="_blank" rel="noopener">simonvedder.com/tools/risky-roles-analyzer</a>
+</footer>
+<div id="popup" class="popup">
+  <span class="close" id="popupClose">&times;</span>
+  <h4 id="popupTitle">Command</h4>
+  <div id="popupBody"></div>
+</div>
+<script>
+const DATA = __DATA__;
+const META = __META__;
+
+const $ = id => document.getElementById(id);
+const tbody = document.querySelector('#data tbody');
+const controls = ['search','filterScope','filterAssignment','filterPrincipal','filterRole','filterVia','filterCustom','filterStatus','filterSeverity','filterProtected'].map($);
+const [search, fScope, fAssign, fPrincipal, fRole, fVia, fCustom, fStatus, fSeverity, fProtected] = controls;
+const toggleAccepted = $('toggleAccepted');
+const SEVERITY_RANK = { Critical: 4, High: 3, Medium: 2, Low: 1, Info: 0 };
+const INACTIVE = ['Disabled', 'NoValidCredential', 'BlockedByMicrosoft'];
+
+const accepted = new Set();   // reviewed rows, session-only
+const selected = new Set();   // ids picked for the removal command, session-only
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function actionsOf(r) {
+  if (Array.isArray(r.RiskyActions)) return r.RiskyActions;
+  if (typeof r.RiskyActions === 'string' && r.RiskyActions) return r.RiskyActions.split(';').map(a => a.trim()).filter(Boolean);
+  return [];
+}
+function uniq(list, pred) { return new Set(list.filter(pred).map(r => r.PrincipalId)).size; }
+
+// Header and summary cards from the data itself, so the numbers cannot drift from the rows.
+$('subtitle').textContent = `Tenant ${META.tenantId || '(unknown)'} · Generated ${META.generated} · ${DATA.length} finding(s)`;
+$('version').textContent = META.version ? `v${META.version}` : '';
+document.title = META.title;
+const cards = [
+  ['Total findings', DATA.length, ''],
+  ['Critical', DATA.filter(r => r.Severity === 'Critical').length, '#fca5a5'],
+  ['High', DATA.filter(r => r.Severity === 'High').length, '#fcd34d'],
+  ['Permanent', DATA.filter(r => r.AssignmentType === 'Permanent').length, 'var(--ok)'],
+  ['Activated (PIM)', DATA.filter(r => r.AssignmentType === 'Activated').length, '#fdba74'],
+  ['Eligible (PIM)', DATA.filter(r => r.AssignmentType === 'Eligible').length, 'var(--warn)'],
+  ['Users', uniq(DATA, r => r.PrincipalType === 'User'), ''],
+  ['Apps', uniq(DATA, r => r.PrincipalType === 'EnterpriseApp' || r.PrincipalType === 'AppRegistration'), ''],
+  ['Managed identities', uniq(DATA, r => r.PrincipalType === 'ManagedIdentity'), ''],
+  ['Groups assigned', uniq(DATA, r => r.PrincipalType === 'Group'), ''],
+  ['Custom roles', DATA.filter(r => r.IsCustomRole).length, 'var(--err)'],
+  ['Inactive principals', DATA.filter(r => INACTIVE.includes(r.ActivityStatus)).length, 'var(--err)'],
+  ['Protected', DATA.filter(r => r.Protected).length, '#c4b5fd'],
+];
+$('summary').innerHTML = cards.map(([label, value, color]) =>
+  `<div class="stat"><div class="stat-label">${esc(label)}</div><div class="stat-value"${color ? ` style="color:${color}"` : ''}>${value}</div></div>`).join('');
+
+[...new Set(DATA.map(r => r.RoleName))].sort().forEach(r => {
+  const o = document.createElement('option'); o.value = r; o.textContent = r; fRole.appendChild(o);
+});
+
+let sortKey = 'RiskScore';
+let sortDir = 'desc';
+let filtered = DATA.slice();
+
+function applyFilters() {
+  const q = search.value.trim().toLowerCase();
+  const minRank = fSeverity.value ? SEVERITY_RANK[fSeverity.value] : -1;
+  const showAccepted = toggleAccepted.dataset.active === 'true';
+  filtered = DATA.filter(r => {
+    if (!showAccepted && accepted.has(r.Id)) return false;
+    if (fScope.value && r.RoleScope !== fScope.value) return false;
+    if (fAssign.value && r.AssignmentType !== fAssign.value) return false;
+    if (fPrincipal.value && r.PrincipalType !== fPrincipal.value) return false;
+    if (fRole.value && r.RoleName !== fRole.value) return false;
+    if (fVia.value === 'direct' && r.ViaGroup) return false;
+    if (fVia.value === 'group' && !r.ViaGroup) return false;
+    if (fCustom.value === 'custom' && !r.IsCustomRole) return false;
+    if (fCustom.value === 'builtin' && r.IsCustomRole) return false;
+    if (fStatus.value === 'inactive') { if (!INACTIVE.includes(r.ActivityStatus)) return false; }
+    else if (fStatus.value && r.ActivityStatus !== fStatus.value) return false;
+    if (minRank >= 0 && (SEVERITY_RANK[r.Severity] ?? 0) < minRank) return false;
+    if (fProtected.value === 'removable' && r.Protected) return false;
+    if (fProtected.value === 'protected' && !r.Protected) return false;
+    if (q) {
+      const hay = [r.Id, r.RoleName, r.PrincipalName, r.UPN, r.AppId, r.ScopeName, r.ViaGroup, r.PrincipalId,
+                   actionsOf(r).join(' '), r.ActivityReason, r.ScopeDetail, r.ScopeLevel, r.ProtectedReason]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  applySort();
+}
+
+function applySort() {
+  filtered.sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'RiskScore') { va = parseFloat(va) || 0; vb = parseFloat(vb) || 0; }
+    else if (sortKey === 'Protected') { va = va ? 1 : 0; vb = vb ? 1 : 0; }
+    else { va = (va ?? '').toString().toLowerCase(); vb = (vb ?? '').toString().toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  document.querySelectorAll('th[data-key]').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc');
+    if (th.dataset.key === sortKey) th.classList.add('sorted-' + sortDir);
+  });
+  render();
+}
+
+function render() {
+  const acceptedTotal = accepted.size;
+  $('count').textContent = `${filtered.length} of ${DATA.length} findings${acceptedTotal ? ` (${acceptedTotal} accepted)` : ''}`;
+  $('empty').style.display = filtered.length ? 'none' : 'block';
+  tbody.innerHTML = filtered.map((r, idx) => {
+    const upnOrApp = r.UPN || r.AppId || '';
+    const customFlag = r.IsCustomRole ? '<span class="custom-flag">CUSTOM</span>' : '';
+    const via = r.ViaGroup ? `<div class="via">via group: ${esc(r.ViaGroup)}</div>` : '<span class="mono">direct</span>';
+    const actionsHtml = actionsOf(r).map(a => `<span class="action-pill">${esc(a)}</span>`).join('');
+    const statusLabel = (r.ActivityStatus || 'Unknown').replace(/([A-Z])/g, ' $1').trim();
+    const reason = r.ActivityReason ? `<div class="status-reason">${esc(r.ActivityReason)}</div>` : '';
+    const sev = r.Severity || 'Info';
+    const scoreHtml = `<span class="score score-${esc(sev)}">${esc(sev.toUpperCase())}</span><div class="score-number">${esc(r.RiskScore)}</div>`;
+    const scopeLevel = r.ScopeLevel || 'Other';
+    const scopeHtml = `<span class="scope-${esc(scopeLevel)}">${esc(scopeLevel)}</span><div class="scope-detail">${esc(r.ScopeName || r.ScopeDetail || '')}</div>`;
+    const protectedHtml = r.Protected
+      ? `<span class="badge badge-protected">protected</span><div class="protected-reason">${esc(r.ProtectedReason || '')}</div>`
+      : '<span class="mono">-</span>';
+    const cleanupHtml = (r.CleanupPrimary || r.CleanupAlt) ? `<button class="small-btn cleanup-btn" data-idx="${idx}">Show</button>` : '<span class="mono">-</span>';
+    const isSelected = selected.has(r.Id);
+    const isAccepted = accepted.has(r.Id);
+    return `
+      <tr class="${isAccepted ? 'accepted' : ''}${isSelected ? ' selected' : ''}" data-id="${esc(r.Id)}">
+        <td class="select-cell"><input type="checkbox" class="select-cb" data-id="${esc(r.Id)}"${r.Protected ? ' disabled title="Protected: the module will not remove this"' : ''}${isSelected ? ' checked' : ''}></td>
+        <td>${scoreHtml}</td>
+        <td><span class="badge badge-${esc(r.RoleScope)}">${esc(r.RoleScope)}</span></td>
+        <td>${esc(r.RoleName)}${customFlag}</td>
+        <td><span class="badge badge-${esc(r.AssignmentType)}">${esc(r.AssignmentType)}</span></td>
+        <td><span class="badge badge-${esc(r.PrincipalType)}">${esc(r.PrincipalType)}</span></td>
+        <td>
+          <div>${esc(r.PrincipalName)}</div>
+          ${upnOrApp ? `<div class="mono identity-upn">${esc(upnOrApp)}</div>` : ''}
+          <div class="mono identity-id">${esc(r.PrincipalId)} · ${esc(r.Id)}</div>
+        </td>
+        <td><span class="badge badge-status-${esc(r.ActivityStatus || 'Unknown')}">${esc(statusLabel)}</span>${reason}</td>
+        <td>${scopeHtml}</td>
+        <td>${via}</td>
+        <td>${protectedHtml}</td>
+        <td class="actions-cell">${actionsHtml}</td>
+        <td>${cleanupHtml}</td>
+        <td class="accept-cell"><input type="checkbox" class="accept-cb" data-id="${esc(r.Id)}" title="Mark as accepted / reviewed"${isAccepted ? ' checked' : ''}></td>
+      </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.cleanup-btn').forEach(btn => btn.addEventListener('click', ev => showCleanup(parseInt(btn.dataset.idx, 10), ev)));
+  tbody.querySelectorAll('.accept-cb').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) accepted.add(cb.dataset.id); else accepted.delete(cb.dataset.id);
+    applyFilters();
+  }));
+  tbody.querySelectorAll('.select-cb').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) selected.add(cb.dataset.id); else selected.delete(cb.dataset.id);
+    cb.closest('tr').classList.toggle('selected', cb.checked);
+    updateSelection();
+  }));
+  updateSelection();
+}
+
+function updateSelection() {
+  $('selectionCount').textContent = `${selected.size} selected`;
+  $('copyRemoval').disabled = selected.size === 0;
+}
+
+function removalCommand(ids) {
+  const list = ids.map(i => `'${i}'`).join(', ');
+  return [
+    `# RiskyRolesAnalyzer: ${ids.length} assignment(s) selected in the report generated ${META.generated}`,
+    `# $findings is the output of Get-RiskyRoleAssignment. Run it again if the variable is gone.`,
+    `$findings | Where-Object Id -in @(${list}) | Remove-RiskyRoleAssignment -WhatIf`,
+    `# Drop -WhatIf to remove. Each assignment is confirmed and written to a backup file before the call.`
+  ].join('\n');
+}
+
+function openPopup(title, html, ev) {
+  const popup = $('popup');
+  $('popupTitle').textContent = title;
+  $('popupBody').innerHTML = html;
+  $('popupBody').querySelectorAll('[data-copy-from]').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const source = $(btn.dataset.copyFrom);
+    if (!source) return;
+    navigator.clipboard.writeText(source.textContent).then(() => {
+      btn.textContent = 'Copied'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    }).catch(() => { btn.textContent = 'Select the text and copy'; setTimeout(() => { btn.textContent = 'Copy'; }, 2500); });
+  }));
+  const x = ev ? Math.min(ev.clientX, window.innerWidth - 740) : 40;
+  const y = ev ? Math.min(ev.clientY, window.innerHeight - 320) : 120;
+  popup.style.left = Math.max(10, x) + 'px';
+  popup.style.top = Math.max(10, y) + 'px';
+  popup.style.display = 'block';
+}
+
+function showCleanup(idx, ev) {
+  const r = filtered[idx];
+  if (!r) return;
+  let html = '';
+  if (r.Protected) html += `<div class="note">Protected: ${esc(r.ProtectedReason)}. The module reports this and does not remove it; the native command below is for you to judge.</div>`;
+  if (r.RoleScope === 'Entra') html += `<div class="prereq-box"><div class="prereq-title">Prerequisite</div>Graph session with <code>RoleManagement.ReadWrite.Directory</code>: <code>Connect-RiskyRolesAnalyzer -RequestWriteScopes</code></div>`;
+  if (r.ViaGroup) html += `<div class="note"><strong>${esc(r.PrincipalName)}</strong> inherits this role through group <strong>${esc(r.ViaGroup)}</strong>. Choose the right scope:</div>`;
+  if (r.CleanupPrimary) {
+    html += `<div class="note">${r.ViaGroup ? 'Option A, remove only this principal from the group:' : 'Native command:'}</div>`;
+    html += `<pre id="cleanupPrimary">${esc(r.CleanupPrimary)}</pre><button class="small-btn" data-copy-from="cleanupPrimary">Copy</button>`;
+  }
+  if (r.CleanupAlt) {
+    html += `<div class="note" style="margin-top:12px">Option B, remove the role from the entire group (affects all members):</div>`;
+    html += `<pre id="cleanupAlt">${esc(r.CleanupAlt)}</pre><button class="small-btn" data-copy-from="cleanupAlt">Copy</button>`;
+  }
+  if (!r.Protected) {
+    html += `<div class="note" style="margin-top:12px">Or through the module, with prompt and backup:</div>`;
+    html += `<pre id="cleanupModule">${esc(removalCommand([r.Id]))}</pre><button class="small-btn" data-copy-from="cleanupModule">Copy</button>`;
+  }
+  openPopup('Cleanup', html, ev);
+}
+
+$('copyRemoval').addEventListener('click', ev => {
+  const ids = DATA.filter(r => selected.has(r.Id)).map(r => r.Id);
+  if (!ids.length) return;
+  const html = `<div class="note">${ids.length} assignment(s). Paste into the PowerShell session that ran <code>Get-RiskyRoleAssignment</code>.</div>` +
+               `<pre id="removalText">${esc(removalCommand(ids))}</pre><button class="small-btn" data-copy-from="removalText">Copy</button>`;
+  openPopup('Removal command', html, ev);
+});
+$('selectVisible').addEventListener('click', () => { filtered.filter(r => !r.Protected).forEach(r => selected.add(r.Id)); render(); });
+$('clearSelection').addEventListener('click', () => { selected.clear(); render(); });
+$('popupClose').addEventListener('click', () => { $('popup').style.display = 'none'; });
+document.addEventListener('click', ev => {
+  const popup = $('popup');
+  if (popup.style.display === 'block' && !popup.contains(ev.target) && !ev.target.classList.contains('cleanup-btn') && ev.target.id !== 'copyRemoval') popup.style.display = 'none';
+});
+document.querySelectorAll('th[data-key]').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.key;
+  if (sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc'; else { sortKey = k; sortDir = 'asc'; }
+  applySort();
+}));
+controls.forEach(el => el.addEventListener('input', applyFilters));
+toggleAccepted.addEventListener('click', () => {
+  const isActive = toggleAccepted.dataset.active === 'true';
+  toggleAccepted.dataset.active = (!isActive).toString();
+  toggleAccepted.textContent = isActive ? 'Show accepted' : 'Hide accepted';
+  applyFilters();
+});
+$('exportCsv').addEventListener('click', () => {
+  const cols = ['Id','Severity','RiskScore','RoleScope','RoleName','IsCustomRole','RiskyActions','AssignmentType','AssignmentId',
+                'PrincipalType','PrincipalName','PrincipalId','UPN','AppId','AccountEnabled','ActivityStatus','ActivityReason',
+                'ScopeLevel','ScopeDetail','ScopeName','Scope','ViaGroup','ViaGroupId','Protected','ProtectedReason','CleanupPrimary','CleanupAlt'];
+  const escCsv = v => v == null ? '' : `"${String(Array.isArray(v) ? v.join('; ') : v).replace(/"/g, '""')}"`;
+  const lines = [cols.join(',')];
+  filtered.forEach(r => lines.push(cols.map(c => escCsv(r[c])).join(',')));
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'risky-role-assignments.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+applyFilters();
+</script>
+</body>
+</html>

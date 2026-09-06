@@ -16,8 +16,11 @@
     FormatsToProcess     = @('RiskyRolesAnalyzer.Format.ps1xml')
     FunctionsToExport    = @(
         'Connect-RiskyRolesAnalyzer'
+        'Export-RiskyRoleReport'
         'Get-RiskyRoleAssignment'
         'Remove-RiskyRoleAssignment'
+        'Restore-RiskyRoleAssignment'
+        'Show-RiskyRoleAssignment'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

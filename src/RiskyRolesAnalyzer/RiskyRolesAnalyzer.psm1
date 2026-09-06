@@ -7,7 +7,9 @@ $script:ModuleRoot = $PSScriptRoot
 $script:TypeName = @{
     Finding = 'RiskyRolesAnalyzer.RiskyRoleAssignment'
     Removal = 'RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval'
+    Restore = 'RiskyRolesAnalyzer.RiskyRoleAssignmentRestore'
 }
+$script:ModuleVersion = [string](Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'RiskyRolesAnalyzer.psd1')).ModuleVersion
 
 # Role lists, risky actions and scoring weights live in one data file so they can be read and
 # reviewed without reading code.
