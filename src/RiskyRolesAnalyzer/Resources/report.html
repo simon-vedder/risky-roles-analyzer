@@ -242,7 +242,7 @@ function actionsOf(r) {
 function uniq(list, pred) { return new Set(list.filter(pred).map(r => r.PrincipalId)).size; }
 
 // Header and summary cards from the data itself, so the numbers cannot drift from the rows.
-$('subtitle').textContent = `Tenant ${META.tenantId || '(unknown)'} · Generated ${META.generated} · ${DATA.length} finding(s)`;
+$('subtitle').textContent = `Tenant ${META.tenantName ? META.tenantName + ' (' + (META.tenantId || 'id unknown') + ')' : (META.tenantId || '(unknown)')} · Generated ${META.generated} · ${DATA.length} finding(s)`;
 $('version').textContent = META.version ? `v${META.version}` : '';
 document.title = META.title;
 const cards = [

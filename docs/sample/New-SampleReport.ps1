@@ -36,5 +36,5 @@ $findings = & $m {
 } $sub $mg $alice $bob $carol $glass $deploy $retired $mi $saas $group
 $findings = $findings | Sort-Object -Property @{ Expression = 'RiskScore'; Descending = $true }
 
-$file = $findings | Export-RiskyRoleReport -Path (Join-Path $PSScriptRoot "report.html") -TenantId 'contoso.onmicrosoft.com' -Title 'Contoso privileged role audit'
+$file = $findings | Export-RiskyRoleReport -Path (Join-Path $PSScriptRoot "report.html") -TenantId 'contoso.onmicrosoft.com' -TenantName 'Contoso' -Title 'Contoso privileged role audit'
 "written $($file.FullName) $($file.Length) bytes"

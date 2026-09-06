@@ -149,6 +149,10 @@
         )
     }
 
+    # Names that usually mean an emergency access account. Only a hint: the module protects what
+    # -BreakGlassAccount names, and warns when an unprotected principal matches this pattern.
+    BreakGlassNamePattern = '(?i)break.?glass|emergency.?access|^bg[-_ ]?\d|^emergency'
+
     # Graph scopes. The read set is what Get-RiskyRoleAssignment needs; the write scope is only
     # requested with Connect-RiskyRolesAnalyzer -RequestWriteScopes and only used by Remove-.
     GraphScopes          = @{
