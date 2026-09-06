@@ -8,7 +8,7 @@ function Resolve-RiskyRoleAssignmentFinding {
 
     Protected means Remove-RiskyRoleAssignment will report the finding and not touch it:
       - inherited through a group (the fix is a membership or the group's assignment, both yours to decide)
-      - PIM eligible (managed in PIM, not by deleting an assignment)
+      - PIM eligible or activated (managed in PIM, not by deleting an assignment)
       - a break-glass account named with -BreakGlassAccount
       - the identity running the audit
     #>
@@ -38,7 +38,7 @@ function Resolve-RiskyRoleAssignmentFinding {
         [string]$ScopeName,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Permanent', 'Eligible')]
+        [ValidateSet('Permanent', 'Eligible', 'Activated')]
         [string]$AssignmentType,
 
         [Parameter()]
@@ -100,6 +100,7 @@ function Resolve-RiskyRoleAssignmentFinding {
     $breakGlass = @($BreakGlassAccount | Where-Object { $_ })
     if ($ViaGroupId) { $protectedReason = "Inherited through group '$ViaGroup'" }
     elseif ($AssignmentType -eq 'Eligible') { $protectedReason = 'PIM eligibility, manage it in PIM' }
+    elseif ($AssignmentType -eq 'Activated') { $protectedReason = 'PIM activation, deactivate or remove the eligibility in PIM' }
     elseif ($breakGlass -and (($principalId -and $principalId -in $breakGlass) -or ($upn -and $upn -in $breakGlass))) { $protectedReason = 'Break-glass account' }
     elseif ($CurrentAccount -and $upn -and $upn -eq $CurrentAccount) { $protectedReason = 'Identity running this audit' }
 

@@ -30,11 +30,17 @@ All notable changes to this project are documented here. The format follows
 - PIM eligibility, group-inherited assignments, break-glass accounts and the auditing identity are
   never removed by the tool; the script only printed cleanup commands.
 
-### Not yet
-- The interactive HTML report. It lands next, from the script's renderer.
-- `Restore-RiskyRoleAssignment` from a backup file.
+- `Export-RiskyRoleReport`: the script's self-contained HTML report, rebuilt from a template file
+  with summary cards, filters, sorting, CSV export, the native cleanup command per finding and a
+  selection that builds the `Remove-RiskyRoleAssignment` command for the PowerShell session.
+- `Show-RiskyRoleAssignment`: pick findings in `Out-ConsoleGridView` or `Out-GridView`, get the
+  original objects back for the pipeline.
+- `Restore-RiskyRoleAssignment`: recreate permanent assignments from a backup file, with the same
+  confirmation and scope checks as the removal.
+- PIM activations are recognised through `roleAssignmentSchedules`, typed `Activated` and protected.
 
 ### Verified
 - Synthetic tenant fixture (two subscriptions, one inherited management group assignment, nested
   groups with a cycle, custom Azure and Entra roles, dormant and deactivated app registrations,
-  disabled user, PIM eligibility): 109 Pester tests, PSScriptAnalyzer clean. No real tenant yet.
+  disabled user, PIM eligibility and activation): 130 Pester tests, PSScriptAnalyzer clean. Sample
+  report rendered in headless Chrome from synthetic findings. No real tenant yet.

@@ -47,7 +47,8 @@ administrator or consultant who has to produce that list on Monday and clean it 
   [`RiskyRoleCatalog.psd1`](src/RiskyRolesAnalyzer/RiskyRoleCatalog.psd1).
 - **Remove with a safety net.** `Remove-RiskyRoleAssignment` prompts per assignment, writes a JSON
   backup before it acts, and refuses anything marked protected: inherited through a group, PIM
-  eligible, your break-glass accounts, and the identity running the audit.
+  eligible or activated, your break-glass accounts, and the identity running the audit.
+  `Restore-RiskyRoleAssignment` puts a backup file back.
 - **Honest about limits.** [When not to use this](docs/when-not-to-use-this.md) and
   [KNOWN-ISSUES.md](KNOWN-ISSUES.md) list every sharp edge found.
 
@@ -59,17 +60,30 @@ Install-Module RiskyRolesAnalyzer -AllowPrerelease
 # 1. Sign in with the read scopes. Nothing changes.
 Connect-RiskyRolesAnalyzer
 
-# 2. Look.
-Get-RiskyRoleAssignment -BreakGlassAccount 'breakglass@contoso.com' | Format-Table
-Get-RiskyRoleAssignment -MinimumSeverity High | Export-Csv privileged.csv
+# 2. Look. Objects for the pipeline, one HTML file for everyone else.
+$findings = Get-RiskyRoleAssignment -BreakGlassAccount 'breakglass@contoso.com'
+$findings | Format-Table
+$findings | Export-RiskyRoleReport -Open
 
 # 3. Pick and remove, with a prompt per assignment and a backup file. -WhatIf shows the plan.
-Get-RiskyRoleAssignment | Where-Object ActivityStatus -ne 'Active' | Remove-RiskyRoleAssignment -WhatIf
-Get-RiskyRoleAssignment | Out-ConsoleGridView -PassThru | Remove-RiskyRoleAssignment
+$findings | Where-Object ActivityStatus -ne 'Active' | Remove-RiskyRoleAssignment -WhatIf
+$findings | Show-RiskyRoleAssignment | Remove-RiskyRoleAssignment
+
+# 4. Changed your mind? The backup file goes back in the same way.
+Restore-RiskyRoleAssignment -Path ./RiskyRolesAnalyzer-backup-20260906-142200.json -WhatIf
 ```
 
-`Out-ConsoleGridView` comes from `Microsoft.PowerShell.ConsoleGuiTools`; on Windows, `Out-GridView`
-works the same way. Entra-only tenants use `-SkipAzure`; tenants without Entra ID P2 use `-SkipPim`.
+`Show-RiskyRoleAssignment` uses `Out-ConsoleGridView` (install `Microsoft.PowerShell.ConsoleGuiTools`)
+or `Out-GridView` on Windows. Entra-only tenants use `-SkipAzure`; tenants without Entra ID P2 use `-SkipPim`.
+
+## The report
+
+<p align="center"><img src="docs/images/report.png" alt="HTML report: summary cards, filters, sortable findings with severity, activity status, protection reason and the removal command builder" width="100%"></p>
+
+One file, no external resources. Summary cards, search, filters, sortable columns, CSV export, the
+native cleanup command per finding, and a checkbox per removable finding that builds the
+`Remove-RiskyRoleAssignment` line for your PowerShell session. Nothing runs from the page; it helps
+you decide and hands you the command.
 
 ## What counts as privileged
 
@@ -110,8 +124,7 @@ on the Azure scope, which Owner and User Access Administrator have.
 ## Status
 
 Pre-release `0.1.0-preview`. What is verified is in [docs/verification.md](docs/verification.md);
-what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). The HTML report of the original script is
-the next thing to land.
+what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). Not run against a real tenant yet.
 
 ## Documentation
 

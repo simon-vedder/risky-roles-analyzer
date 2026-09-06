@@ -16,3 +16,11 @@ cd docs/images
 ```
 
 The central tools page on simonvedder.com reuses `hero.png`; keep the file name.
+
+`report.png` is the README screenshot of the sample report (`docs/sample/report.html`, built by
+`docs/sample/New-SampleReport.ps1` from synthetic findings):
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu --hide-scrollbars \
+  --force-device-scale-factor=1.5 --window-size=1600,1000 --screenshot=docs/images/report.png "file://$PWD/docs/sample/report.html"
+```

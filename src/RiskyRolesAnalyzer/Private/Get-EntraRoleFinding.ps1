@@ -6,8 +6,9 @@ function Get-EntraRoleFinding {
     Reads every role definition with its permissions so custom directory roles that grant risky
     actions count as privileged next to the built-in list. Permanent assignments come from
     roleAssignments; eligible ones from roleEligibilitySchedules, which needs Entra ID P2 and is
-    skipped with a warning when the tenant or the scopes do not allow it. Group principals are
-    expanded like in Azure.
+    skipped with a warning when the tenant or the scopes do not allow it. A permanent-looking
+    assignment that roleAssignmentSchedules reports as Activated is a PIM activation and is
+    typed Activated (and protected) instead. Group principals are expanded like in Azure.
     #>
     [CmdletBinding()]
     [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignment')]
@@ -42,6 +43,22 @@ function Get-EntraRoleFinding {
     }
     Write-Verbose "$($privileged.Count) privileged Entra role definitions (built-in and custom)"
 
+    # PIM activations show up in roleAssignments like permanent ones; the schedules tell them apart.
+    $activated = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if (-not $SkipPim) {
+        try {
+            foreach ($schedule in @(Get-GraphCollection -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentSchedules')) {
+                if ((Get-PropertyOrDefault -InputObject $schedule -Name 'assignmentType' -Default '') -ne 'Activated') { continue }
+                $key = @((Get-PropertyOrDefault -InputObject $schedule -Name 'principalId' -Default ''), (Get-PropertyOrDefault -InputObject $schedule -Name 'roleDefinitionId' -Default ''), (Get-PropertyOrDefault -InputObject $schedule -Name 'directoryScopeId' -Default '/')) -join '|'
+                $null = $activated.Add($key)
+            }
+            Write-Verbose "$($activated.Count) PIM activation(s) in progress"
+        }
+        catch {
+            Write-Verbose "Could not read roleAssignmentSchedules; PIM activations will show as Permanent. $($_.Exception.Message)"
+        }
+    }
+
     $sources = @(@{ Uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments'; Type = 'Permanent' })
     if (-not $SkipPim) { $sources += @{ Uri = 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules'; Type = 'Eligible' } }
 
@@ -63,6 +80,8 @@ function Get-EntraRoleFinding {
             if (-not $principalId) { continue }
             $role = $privileged[$roleId]
             $directoryScope = [string](Get-PropertyOrDefault -InputObject $assignment -Name 'directoryScopeId' -Default '/')
+            $assignmentType = $source.Type
+            if ($assignmentType -eq 'Permanent' -and $activated.Contains("$principalId|$roleId|$directoryScope")) { $assignmentType = 'Activated' }
 
             $common = @{
                 RoleScope        = 'Entra'
@@ -70,7 +89,7 @@ function Get-EntraRoleFinding {
                 RoleDefinitionId = $roleId
                 Scope            = $directoryScope
                 ScopeName        = (Resolve-RoleScope -Scope $directoryScope -RoleScope Entra).Detail
-                AssignmentType   = $source.Type
+                AssignmentType   = $assignmentType
                 AssignmentId     = [string](Get-PropertyOrDefault -InputObject $assignment -Name 'id' -Default '')
                 IsCustomRole     = $role.IsCustom
                 RiskyAction      = $role.Risky

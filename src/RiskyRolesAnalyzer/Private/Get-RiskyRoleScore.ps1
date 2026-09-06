@@ -22,7 +22,7 @@ function Get-RiskyRoleScore {
         [string]$PrincipalType,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Permanent', 'Eligible')]
+        [ValidateSet('Permanent', 'Eligible', 'Activated')]
         [string]$AssignmentType,
 
         [Parameter()]

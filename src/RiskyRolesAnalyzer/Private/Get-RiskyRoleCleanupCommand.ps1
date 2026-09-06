@@ -26,7 +26,7 @@ function Get-RiskyRoleCleanupCommand {
         [string]$PrincipalId,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Permanent', 'Eligible')]
+        [ValidateSet('Permanent', 'Eligible', 'Activated')]
         [string]$AssignmentType,
 
         [Parameter()]
@@ -60,6 +60,9 @@ function Get-RiskyRoleCleanupCommand {
     }
     elseif ($AssignmentType -eq 'Eligible') {
         $primary = "# Remove the PIM eligibility of '$PrincipalId' for '$RoleName' in the Entra portal: PIM > Entra roles > Eligible assignments"
+    }
+    elseif ($AssignmentType -eq 'Activated') {
+        $primary = "# '$PrincipalId' has activated '$RoleName' through PIM. Deactivate it or remove the eligibility in PIM; deleting the assignment only ends this activation."
     }
     elseif ($AssignmentId) {
         $primary = "Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$AssignmentId'"
