@@ -25,6 +25,10 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
 
 ## Platform
 
+- *(observed)* The Graph session from `Connect-RiskyRolesAnalyzer` lives in the PowerShell process
+  that created it; a new `pwsh` starts without it, while the Az session is picked up from disk.
+  Run `Connect-` and `Get-` in the same session, or scripts end with "Not connected to Microsoft Graph".
+
 - *(observed)* `Import-Module RiskyRolesAnalyzer` pulls in `Az.Resources`, which takes a few
   seconds on first import.
 - *(observed)* `Out-ConsoleGridView` is not a dependency; `Show-RiskyRoleAssignment` explains what

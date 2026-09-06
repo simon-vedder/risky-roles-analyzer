@@ -48,5 +48,7 @@ All notable changes to this project are documented here. The format follows
   disabled user, PIM eligibility and activation): 130 Pester tests, PSScriptAnalyzer clean. Sample
   report rendered in headless Chrome from synthetic findings.
 - Read path on a real tenant (own, Entra ID P2): 8 findings in 56 seconds, report opened, no
-  unresolved principals. Details in docs/verification.md. The write path has not run against a
-  real tenant yet.
+  unresolved principals.
+- Write path on the same tenant with a test user: Reader on a throwaway resource group and Directory
+  Readers, removed with backup, verified gone, restored from the file, verified back, cleaned up.
+  Details in docs/verification.md.
