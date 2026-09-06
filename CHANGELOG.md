@@ -38,9 +38,17 @@ All notable changes to this project are documented here. The format follows
 - `Restore-RiskyRoleAssignment`: recreate permanent assignments from a backup file, with the same
   confirmation and scope checks as the removal.
 - PIM activations are recognised through `roleAssignmentSchedules`, typed `Activated` and protected.
+- `Get-RiskyRoleAssignment` warns when an unprotected principal is named like an emergency access
+  account (break-glass, emergency access, bg1) and `-BreakGlassAccount` was not passed for it.
+- The report shows the organisation display name next to the tenant id when Graph lets it read one.
 
 ### Verified
 - Synthetic tenant fixture (two subscriptions, one inherited management group assignment, nested
   groups with a cycle, custom Azure and Entra roles, dormant and deactivated app registrations,
   disabled user, PIM eligibility and activation): 130 Pester tests, PSScriptAnalyzer clean. Sample
-  report rendered in headless Chrome from synthetic findings. No real tenant yet.
+  report rendered in headless Chrome from synthetic findings.
+- Read path on a real tenant (own, Entra ID P2): 8 findings in 56 seconds, report opened, no
+  unresolved principals.
+- Write path on the same tenant with a test user: Reader on a throwaway resource group and Directory
+  Readers, removed with backup, verified gone, restored from the file, verified back, cleaned up.
+  Details in docs/verification.md.

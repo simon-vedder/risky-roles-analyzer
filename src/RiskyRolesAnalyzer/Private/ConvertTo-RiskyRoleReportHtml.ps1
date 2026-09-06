@@ -22,6 +22,11 @@ function ConvertTo-RiskyRoleReportHtml {
         [string]$TenantId,
 
         [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [string]$TenantName,
+
+        [Parameter()]
         [string]$Title = 'Privileged Role Audit',
 
         [Parameter()]
@@ -39,6 +44,7 @@ function ConvertTo-RiskyRoleReportHtml {
     $meta = ConvertTo-Json -InputObject @{
         title     = $Title
         tenantId  = $TenantId
+        tenantName = $TenantName
         generated = $GeneratedAt.ToString('yyyy-MM-dd HH:mm:ss')
         version   = $script:ModuleVersion
         count     = $rows.Count

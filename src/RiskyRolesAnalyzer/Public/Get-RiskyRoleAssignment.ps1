@@ -33,7 +33,8 @@ function Get-RiskyRoleAssignment {
 
     .PARAMETER BreakGlassAccount
     User principal names or object ids of emergency access accounts. Their assignments are
-    reported and marked Protected.
+    reported and marked Protected. The module cannot know which accounts these are; it warns when
+    an unprotected principal is named like one.
 
     .PARAMETER SkipAzure
     Entra ID only; no Az session needed.
@@ -132,6 +133,12 @@ function Get-RiskyRoleAssignment {
     if (-not $SkipAzure) { foreach ($finding in @(Get-AzureRoleFinding -Audit $audit -TenantId $tenantId -SubscriptionId $SubscriptionId)) { $findings.Add($finding) } }
     if (-not $SkipEntra) { foreach ($finding in @(Get-EntraRoleFinding -Audit $audit -SkipPim:$SkipPim)) { $findings.Add($finding) } }
     Write-Progress -Activity 'RiskyRolesAnalyzer' -Completed
+
+    $pattern = [string]$script:Catalog.BreakGlassNamePattern
+    $suspects = @($findings | Where-Object { -not $_.Protected -and ($_.PrincipalName -match $pattern -or ($_.UPN -and $_.UPN -match $pattern)) } | ForEach-Object PrincipalName | Sort-Object -Unique)
+    if ($suspects.Count) {
+        Write-Warning "These look like emergency access accounts and are not protected: $($suspects -join ', '). Pass -BreakGlassAccount with their UPNs or object ids so Remove-RiskyRoleAssignment refuses them."
+    }
 
     $rank = @{ Info = 0; Low = 1; Medium = 2; High = 3; Critical = 4 }
     $minimum = $rank[$MinimumSeverity]

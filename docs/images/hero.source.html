@@ -39,9 +39,9 @@
   <!-- left: name and promise. Keep the tagline under ~55 characters. -->
   <text x="80" y="150" fill="#38bdf8" font-size="18" font-weight="700" letter-spacing="5">AZURE  ·  POWERSHELL</text>
   <text x="76" y="230" fill="#ffffff" font-size="72" font-weight="800" letter-spacing="-2">RiskyRolesAnalyzer</text>
-  <text x="80" y="288" fill="#aab4c8" font-size="28" font-weight="400">Every privileged role assignment in your tenant, including the ones hiding behind groups, custom roles and dormant apps.</text>
-  <text x="80" y="330" fill="#6f7d99" font-size="21">Read-only by default · rules you can read · backup before every change</text>
-  <text x="80" y="362" fill="#6f7d99" font-size="21">PowerShell Gallery module · MIT</text>
+  <text x="80" y="288" fill="#aab4c8" font-size="28" font-weight="400">Every privileged role assignment, hidden ones included.</text>
+  <text x="80" y="330" fill="#6f7d99" font-size="21">Azure RBAC and Entra ID · nested groups · custom roles · dormant apps</text>
+  <text x="80" y="362" fill="#6f7d99" font-size="21">Read-only by default · backup before every change · MIT</text>
 
   <g class="mono" font-size="19">
     <line x1="80" y1="470" x2="760" y2="470" stroke="url(#chain)" stroke-width="3" stroke-linecap="round"/>
@@ -64,8 +64,8 @@
   <g class="mono" font-size="21">
     <text x="930" y="240" fill="#8fd3ff">PS&gt; </text><text x="985" y="240" fill="#e2e8f0">Install-Module RiskyRolesAnalyzer</text>
     <text x="930" y="290" fill="#8fd3ff">PS&gt; </text><text x="985" y="290" fill="#e2e8f0">Get-RiskyRoleAssignment | Format-Table</text>
-    <text x="960" y="340" fill="#f59e0b">High</text><text x="1060" y="340" fill="#aab4c8">item-01   privileged and unused</text>
-    <text x="960" y="378" fill="#facc15">Medium</text><text x="1060" y="378" fill="#aab4c8">item-02   privileged and in use</text>
+    <text x="960" y="340" fill="#fca5a5">Critical</text><text x="1075" y="340" fill="#aab4c8">Global Admin   app, no valid creds</text>
+    <text x="960" y="378" fill="#f59e0b">High</text><text x="1075" y="378" fill="#aab4c8">Owner via group   Cloud Admins</text>
     <text x="930" y="440" fill="#8fd3ff">PS&gt; </text><text x="985" y="440" fill="#e2e8f0">... | Remove-RiskyRoleAssignment -WhatIf</text>
   </g>
 </svg>

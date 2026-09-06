@@ -21,6 +21,9 @@ function Export-RiskyRoleReport {
     .PARAMETER TenantId
     Shown in the header. Default: the tenant of the current Graph session.
 
+    .PARAMETER TenantName
+    Shown next to the id. Default: the organisation display name from Graph, when readable.
+
     .PARAMETER Open
     Open the report in the default browser after writing it.
 
@@ -52,6 +55,9 @@ function Export-RiskyRoleReport {
         [string]$TenantId,
 
         [Parameter()]
+        [string]$TenantName,
+
+        [Parameter()]
         [switch]$Open
     )
 
@@ -68,7 +74,14 @@ function Export-RiskyRoleReport {
             $context = Get-MgContext -ErrorAction SilentlyContinue
             $TenantId = [string](Get-PropertyOrDefault -InputObject $context -Name 'TenantId' -Default '')
         }
-        $html = ConvertTo-RiskyRoleReportHtml -InputObject $items.ToArray() -TenantId $TenantId -Title $Title
+        if (-not $TenantName) {
+            try {
+                $organisation = @(Get-GraphCollection -Uri 'https://graph.microsoft.com/v1.0/organization?$select=displayName')
+                if ($organisation.Count) { $TenantName = [string](Get-PropertyOrDefault -InputObject $organisation[0] -Name 'displayName' -Default '') }
+            }
+            catch { Write-Verbose "Organisation name not readable: $($_.Exception.Message)" }
+        }
+        $html = ConvertTo-RiskyRoleReportHtml -InputObject $items.ToArray() -TenantId $TenantId -TenantName $TenantName -Title $Title
 
         if (-not $PSCmdlet.ShouldProcess($Path, "Write HTML report with $($items.Count) finding(s)")) { return }
         Set-Content -Path $Path -Value $html -Encoding utf8 -NoNewline

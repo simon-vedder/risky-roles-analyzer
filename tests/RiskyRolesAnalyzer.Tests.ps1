@@ -156,6 +156,7 @@ BeforeAll {
         $u = [string]$Uri
         if ($u -match '/v1\.0/applications\?') { return @{ value = $Fixture.Applications } }
         if ($u -match '/beta/applications\?') { return @{ value = $Fixture.ApplicationFlags } }
+        if ($u -match '/v1\.0/organization') { return @{ value = @(@{ displayName = 'Contoso' }) } }
         if ($u -match '/directoryObjects/([^/?]+)') {
             $id = $Matches[1]
             if (-not $Fixture.Objects.ContainsKey($id)) { throw "404 Not Found: $id" }
@@ -626,6 +627,12 @@ Describe 'Collectors against the synthetic tenant' {
             $result.Count | Should -Be 8
             @($warnings | Where-Object { $_ -match 'PIM eligible assignments skipped' }).Count | Should -Be 1
         }
+        It 'warns about accounts that look like break-glass and are not protected' {
+            $null = Get-RiskyRoleAssignment -SkipAzure -WarningVariable warnings -WarningAction SilentlyContinue
+            @($warnings | Where-Object { $_ -match 'emergency access accounts.*Break Glass' }).Count | Should -Be 1
+            $null = Get-RiskyRoleAssignment -SkipAzure -BreakGlassAccount 'breakglass@contoso.com' -WarningVariable quiet -WarningAction SilentlyContinue
+            @($quiet | Where-Object { $_ -match 'emergency access' }).Count | Should -Be 0
+        }
         It 'refuses to run with both sources skipped' {
             { Get-RiskyRoleAssignment -SkipAzure -SkipEntra } | Should -Throw '*Nothing to audit*'
         }
@@ -714,6 +721,7 @@ Describe 'ConvertTo-RiskyRoleReportHtml' {
 Describe 'Export-RiskyRoleReport' {
     BeforeAll {
         Mock -ModuleName RiskyRolesAnalyzer Get-MgContext { [pscustomobject]@{ TenantId = 'tenant-1'; Account = 'me@contoso.com'; Scopes = @() } }
+        Mock -ModuleName RiskyRolesAnalyzer Invoke-MgGraphRequest { Invoke-FixtureGraph -Method $Method -Uri $Uri }
     }
     BeforeEach {
         $reportPath = Join-Path $TestDrive 'report.html'
@@ -724,7 +732,14 @@ Describe 'Export-RiskyRoleReport' {
         $file = New-Finding | Export-RiskyRoleReport -Path $reportPath
         $file | Should -BeOfType System.IO.FileInfo
         $file.Length | Should -BeGreaterThan 10000
-        Get-Content $reportPath -Raw | Should -Match '"tenantId":"tenant-1"'
+        $content = Get-Content $reportPath -Raw
+        $content | Should -Match '"tenantId":"tenant-1"'
+        $content | Should -Match '"tenantName":"Contoso"'
+    }
+    It 'survives a tenant whose organisation is not readable' {
+        Mock -ModuleName RiskyRolesAnalyzer Invoke-MgGraphRequest { throw '403 Forbidden' }
+        $null = New-Finding | Export-RiskyRoleReport -Path $reportPath
+        Get-Content $reportPath -Raw | Should -Match '"tenantName":""'
     }
     It 'writes nothing under -WhatIf' {
         $result = New-Finding | Export-RiskyRoleReport -Path $reportPath -WhatIf
@@ -732,9 +747,10 @@ Describe 'Export-RiskyRoleReport' {
         Test-Path $reportPath | Should -BeFalse
     }
     It 'takes an explicit tenant and title' {
-        $null = @((New-Finding), (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-9'; DisplayName = 'Nine' }) })) | Export-RiskyRoleReport -Path $reportPath -TenantId 'custom-tenant' -Title 'My & audit'
+        $null = @((New-Finding), (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-9'; DisplayName = 'Nine' }) })) | Export-RiskyRoleReport -Path $reportPath -TenantId 'custom-tenant' -TenantName 'Custom' -Title 'My & audit'
         $content = Get-Content $reportPath -Raw
         $content | Should -Match '"tenantId":"custom-tenant"'
+        $content | Should -Match '"tenantName":"Custom"'
         $content | Should -Match '<title>My &amp; audit</title>'
         $content | Should -Match '"count":2'
     }
