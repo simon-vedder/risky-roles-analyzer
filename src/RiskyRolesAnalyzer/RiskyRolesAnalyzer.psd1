@@ -8,13 +8,14 @@
     Copyright            = '(c) 2026 Simon Vedder. MIT License.'
     Description          = 'Finds privileged Azure RBAC and Entra ID role assignments that posture tools miss, and lets you remove them safely.'
     PowerShellVersion    = '7.2'
-    # Audit tools: Microsoft.Graph.Authentication and/or Az.Accounts + Az.Resources.
-    # Automation tools: keep the minimums at the Az bundle the Azure Automation PowerShell 7.2
-    # runtime ships (Az 11.2.0: Az.Accounts 2.15.0, Az.Compute 7.1.1, Az.Resources 6.13.0) and
-    # import no Az modules into the Automation Account. A newer Az.Accounts next to the runtime's
-    # bundle breaks assembly loading in the sandbox (observed 2026-09-05).
-    RequiredModules      = @()
+    RequiredModules      = @(
+        @{ ModuleName = 'Az.Accounts'; ModuleVersion = '3.0.0' }
+        @{ ModuleName = 'Az.Resources'; ModuleVersion = '7.0.0' }
+        @{ ModuleName = 'Microsoft.Graph.Authentication'; ModuleVersion = '2.15.0' }
+    )
+    FormatsToProcess     = @('RiskyRolesAnalyzer.Format.ps1xml')
     FunctionsToExport    = @(
+        'Connect-RiskyRolesAnalyzer'
         'Get-RiskyRoleAssignment'
         'Remove-RiskyRoleAssignment'
     )
@@ -23,7 +24,7 @@
     AliasesToExport      = @()
     PrivateData          = @{
         PSData = @{
-            Tags         = @('Azure', 'PSEdition_Core')
+            Tags         = @('Azure', 'Entra', 'EntraID', 'RBAC', 'PIM', 'Security', 'Audit', 'PrivilegedAccess', 'PSEdition_Core')
             LicenseUri   = 'https://github.com/simon-vedder/risky-roles-analyzer/blob/main/LICENSE'
             ProjectUri   = 'https://github.com/simon-vedder/risky-roles-analyzer'
             ReleaseNotes = 'https://github.com/simon-vedder/risky-roles-analyzer/blob/main/CHANGELOG.md'

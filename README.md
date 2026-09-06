@@ -14,16 +14,40 @@ Finds privileged Azure RBAC and Entra ID role assignments that posture tools mis
 
 ## Why
 
-- What Microsoft ships for this, and where it stops.
-- What the community has, and what it does not cover.
-- The population this is for.
+Microsoft gives you the pieces: PIM with *Discovery and insights*, access reviews, the *Roles and
+administrators* blade, `Get-AzRoleAssignment`. Each shows one slice. None of them answers the
+question an audit starts with: **who holds privilege in this tenant right now, through what, and
+how bad is it?**
+
+The slices this module puts back together:
+
+- **Custom roles that are privileged in effect.** A custom Azure or Entra role is rated by the
+  actions it grants after `NotActions`, not by its name. `Microsoft.Authorization/*` is Owner in
+  disguise; `microsoft.directory/users/password/update` is a password reset for everyone.
+- **Privilege inherited through groups.** Nested groups are expanded and every member is listed
+  with the group it inherits through, so "Cloud Admins is Owner" becomes twelve names.
+- **Principals that should not be there any more.** Disabled users with permanent roles, app
+  registrations whose every credential has expired, app registrations deactivated in the portal,
+  service principals blocked by Microsoft. Classic persistence, quiet by design.
+- **Azure and Entra in one list**, across every subscription, with management group and root
+  assignments reported once instead of once per subscription.
+- **Permanent versus PIM eligible**, scored separately, so a tenant that uses PIM properly looks
+  different from one that does not.
+
+The community has scripts and CSV exports for parts of this, and BloodHound for attack paths.
+There is no PowerShell Gallery module that owns the inventory and the cleanup. This is for the
+administrator or consultant who has to produce that list on Monday and clean it up on Tuesday.
 
 ## Features
 
-- **Read-only by default.** `Get-RiskyRoleAssignment` needs read scopes only and returns objects, not a log.
-- **Rules you can read.** Every decision is a pure function with a test on a fixture.
-- **Remove with a safety net.** `Remove-RiskyRoleAssignment` prompts per object, writes a JSON backup before
-  it acts, and refuses anything marked protected.
+- **Read-only by default.** `Get-RiskyRoleAssignment` needs read scopes only and returns objects,
+  not a log: score, severity, why, the native cleanup command, and a stable `Id` per finding.
+- **Rules you can read.** Every decision is a pure function with a test on a fixture. The role
+  lists, risky actions and scoring weights live in one data file,
+  [`RiskyRoleCatalog.psd1`](src/RiskyRolesAnalyzer/RiskyRoleCatalog.psd1).
+- **Remove with a safety net.** `Remove-RiskyRoleAssignment` prompts per assignment, writes a JSON
+  backup before it acts, and refuses anything marked protected: inherited through a group, PIM
+  eligible, your break-glass accounts, and the identity running the audit.
 - **Honest about limits.** [When not to use this](docs/when-not-to-use-this.md) and
   [KNOWN-ISSUES.md](KNOWN-ISSUES.md) list every sharp edge found.
 
@@ -32,33 +56,62 @@ Finds privileged Azure RBAC and Entra ID role assignments that posture tools mis
 ```powershell
 Install-Module RiskyRolesAnalyzer -AllowPrerelease
 
-# 1. Look. Nothing changes.
-Get-RiskyRoleAssignment | Format-Table Name, Severity, Reason
+# 1. Sign in with the read scopes. Nothing changes.
+Connect-RiskyRolesAnalyzer
 
-# 2. Pick and remove, with a prompt per object and a backup file. -WhatIf shows the plan.
-Get-RiskyRoleAssignment -MinimumSeverity High | Remove-RiskyRoleAssignment -WhatIf
+# 2. Look.
+Get-RiskyRoleAssignment -BreakGlassAccount 'breakglass@contoso.com' | Format-Table
+Get-RiskyRoleAssignment -MinimumSeverity High | Export-Csv privileged.csv
+
+# 3. Pick and remove, with a prompt per assignment and a backup file. -WhatIf shows the plan.
+Get-RiskyRoleAssignment | Where-Object ActivityStatus -ne 'Active' | Remove-RiskyRoleAssignment -WhatIf
 Get-RiskyRoleAssignment | Out-ConsoleGridView -PassThru | Remove-RiskyRoleAssignment
 ```
 
+`Out-ConsoleGridView` comes from `Microsoft.PowerShell.ConsoleGuiTools`; on Windows, `Out-GridView`
+works the same way. Entra-only tenants use `-SkipAzure`; tenants without Entra ID P2 use `-SkipPim`.
+
+## What counts as privileged
+
+Built-in roles from the catalog (Owner, User Access Administrator, Global Administrator,
+Privileged Role Administrator and the rest of the usual list, plus the roles BloodHound treats as
+dangerous), custom roles that grant a risky action, and anything you add with
+`-AdditionalAzureRole` and `-AdditionalEntraRole`.
+
+Each finding is scored from 0 to 10: a base per role, multiplied by scope breadth, lowered for
+PIM eligibility and for principals that cannot sign in, raised a little for applications and
+managed identities. Critical is 9 and above, High 7, Medium 5, Low 3. The score expresses live
+exploitability; a disabled Global Administrator scores lower than an enabled one even though both
+should go, which is why `ActivityStatus` is its own column.
+
 ## Safety
 
-The tool proposes, you decide. `Remove-RiskyRoleAssignment` accepts only objects that `Get-RiskyRoleAssignment` produced,
-asks before every object (`ConfirmImpact = 'High'`), writes every object to a JSON file before the
-call, and reports protected objects instead of touching them. `-WhatIf` works everywhere.
-
+The tool proposes, you decide. `Remove-RiskyRoleAssignment` accepts only objects that
+`Get-RiskyRoleAssignment` produced, asks before every assignment (`ConfirmImpact = 'High'`),
+writes every assignment to a JSON file before the call, and reports protected assignments instead
+of touching them. `-WhatIf` works everywhere. Azure assignments are removed by principal, role
+definition id and scope; Entra assignments by their assignment id. Nothing is removed on behalf
+of a group's members: the fix there is the group's own assignment or the membership, and both
+are yours to decide.
 
 ## Permissions
 
+Read path, all that `Connect-RiskyRolesAnalyzer` requests by default:
+
 ```
-<exact Graph scopes or RBAC actions for the read path>
+Graph:  RoleManagement.Read.Directory, Directory.Read.All, Group.Read.All, Application.Read.All
+Azure:  Reader on every subscription in scope (a management group assignment works)
 ```
 
-The write path adds `<...>` and is only requested with the switch that enables it.
+The write path adds `RoleManagement.ReadWrite.Directory` for Entra assignments (requested only
+with `Connect-RiskyRolesAnalyzer -RequestWriteScopes`) and `Microsoft.Authorization/roleAssignments/delete`
+on the Azure scope, which Owner and User Access Administrator have.
 
 ## Status
 
 Pre-release `0.1.0-preview`. What is verified is in [docs/verification.md](docs/verification.md);
-what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md).
+what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). The HTML report of the original script is
+the next thing to land.
 
 ## Documentation
 

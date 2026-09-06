@@ -9,6 +9,10 @@ $script:TypeName = @{
     Removal = 'RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval'
 }
 
+# Role lists, risky actions and scoring weights live in one data file so they can be read and
+# reviewed without reading code.
+$script:Catalog = Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'RiskyRoleCatalog.psd1')
+
 foreach ($folder in 'Private', 'Public') {
     foreach ($file in Get-ChildItem -Path (Join-Path $PSScriptRoot $folder) -Filter '*.ps1' -File) {
         . $file.FullName
