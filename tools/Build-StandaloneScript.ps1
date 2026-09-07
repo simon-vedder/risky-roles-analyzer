@@ -63,11 +63,10 @@ $parts.Add(@"
 
     Read-only. It signs in with read scopes, reads, and writes an HTML file. It changes nothing.
 
-    To act on the findings rather than just read them, use the module. It returns the findings as
-    objects and can remove an assignment with a prompt, a JSON backup and a refusal for anything
-    inherited through a group, held in PIM, named as break-glass or belonging to you:
+    The report gives you the native command for every finding. If you would rather remove them with
+    a prompt, a JSON backup and a refusal for anything inherited through a group, held in PIM, named
+    as break-glass or belonging to you, the repository holds a module that does exactly that:
 
-        Install-Module RiskyRolesAnalyzer -AllowPrerelease
         https://github.com/simon-vedder/risky-roles-analyzer
 
 .PARAMETER OutputPath
@@ -282,8 +281,7 @@ foreach ($group in ($findings | Group-Object Severity | Sort-Object { @{ Critica
 }
 Write-Host ''
 Write-Host "Report: $($file.FullName)" -ForegroundColor Green
-Write-Host 'To act on these findings instead of reading them, the module removes them with a prompt and a backup:' -ForegroundColor DarkGray
-Write-Host '  Install-Module RiskyRolesAnalyzer -AllowPrerelease' -ForegroundColor DarkGray
+Write-Host 'Every finding in the report carries the command that would remove it. Check each one before you run it.' -ForegroundColor DarkGray
 '@)
 
 $built = (($parts -join "`n") -replace "`r`n", "`n").TrimEnd() + "`n"

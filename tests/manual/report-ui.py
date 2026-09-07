@@ -5,8 +5,8 @@ import websockets
 
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PORT = 9333
-URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765/report.html"   # serve docs/sample with: python3 -m http.server 8765 --bind 127.0.0.1
-PROFILE = os.path.join(os.environ.get("TMPDIR", "/tmp"), "rra-report-ui-chrome-profile")
+URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765/report.html"
+PROFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chrome-profile")
 
 results = []
 def check(name, ok, detail=""):
@@ -125,9 +125,11 @@ async def main():
             await cdp.js("document.getElementById('copyRemoval').click()")
             cmd = await cdp.js("document.getElementById('popup').style.display === 'block' ? document.getElementById('removalText').textContent : ''")
             ids = await cdp.js("DATA.filter(r => !r.Protected).map(r => r.Id)")
-            check("removal popup opens with the module command", "Remove-RiskyRoleAssignment -WhatIf" in cmd and "$findings | Where-Object Id -in @(" in cmd)
-            check("removal command lists every selected id, quoted", all(f"'{i}'" in cmd for i in ids) and f"{removable} assignment(s)" in cmd)
-            check("removal command never contains a protected id", not any(f"'{i}'" in cmd for i in (await cdp.js("DATA.filter(r => r.Protected).map(r => r.Id)"))))
+            check("removal popup opens with the native commands and a warning", f"{removable} assignment(s)" in cmd and "ask nothing" in cmd and "Remove-RiskyRoleAssignment" not in cmd)
+            wanted = await cdp.js("DATA.filter(r => !r.Protected).map(r => r.CleanupPrimary)")
+            check("removal command carries one native command per selected row", all(w and w in cmd for w in wanted))
+            protected_cmds = await cdp.js("DATA.filter(r => r.Protected).map(r => r.CleanupPrimary).filter(Boolean)")
+            check("removal command never contains a protected row's command", not any(c in cmd for c in protected_cmds))
             await cdp.call("Emulation.setFocusEmulationEnabled", enabled=True)
             await cdp.call("Page.bringToFront")
             await cdp.js("document.querySelector('#popupBody [data-copy-from=\"removalText\"]').click()")
@@ -151,11 +153,11 @@ async def main():
             await cdp.js("(() => { const tr = [...document.querySelectorAll('#data tbody tr')].find(tr => DATA.find(d => d.Id === tr.dataset.id).ViaGroup); tr.querySelector('.cleanup-btn').click(); })()")
             body = await cdp.js("document.getElementById('popup').style.display === 'block' ? document.getElementById('popupBody').innerText : ''")
             check("cleanup popup for an inherited row offers option A (member) and option B (group)", "Option A" in body and "Option B" in body and "inherits this role through group" in body)
-            check("inherited row is protected: module command not offered", "Protected:" in body and "Remove-RiskyRoleAssignment" not in body)
+            check("inherited row is protected: the popup says so and offers both group options", "Protected:" in body and "Remove-RiskyRoleAssignment" not in body)
             await cdp.js("document.getElementById('popupClose').click()")
             await cdp.js("(() => { const tr = [...document.querySelectorAll('#data tbody tr')].find(tr => { const r = DATA.find(d => d.Id === tr.dataset.id); return !r.Protected && r.RoleScope === 'Entra'; }); tr.querySelector('.cleanup-btn').click(); })()")
             body = await cdp.js("document.getElementById('popupBody').innerText")
-            check("cleanup popup for a removable Entra row shows the write-scope prerequisite and the module command", "RoleManagement.ReadWrite.Directory" in body and "Remove-RiskyRoleAssignment -WhatIf" in body and "Native command" in body)
+            check("cleanup popup for a removable Entra row shows the write-scope prerequisite and the native command", "RoleManagement.ReadWrite.Directory" in body and "Connect-MgGraph" in body and "Native command" in body and "Remove-RiskyRoleAssignment" not in body)
             await cdp.js("document.body.click()")
             check("click outside closes the popup", await cdp.js("document.getElementById('popup').style.display") == "none")
 

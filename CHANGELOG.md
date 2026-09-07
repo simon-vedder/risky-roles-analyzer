@@ -17,6 +17,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 - The README leads with the script. The module is the second step, for acting on the findings.
+- **The module is no longer published to the PowerShell Gallery.** `0.1.0-preview` is unlisted, which
+  keeps the name and stops it being found. Installing a module to produce an HTML report is the wrong
+  trade for a tool most people run once a quarter. Clone the repository and import it if you want the
+  removal path. See [ADR 0003](docs/decisions/0003-the-report-is-a-script-the-module-is-optional.md).
+- The report emits native commands only. Each finding already carried its Azure or Graph command; the
+  bulk selection now copies those instead of a `Remove-RiskyRoleAssignment` line, with a line saying
+  they ask for no confirmation. The report works with no module anywhere in sight.
 
 ### Fixed
 - The cleanup commands in the report quote role, scope and principal values properly. A role named

@@ -9,7 +9,7 @@ Finds privileged Azure RBAC and Entra ID role assignments that posture tools mis
 | Module version | 0.1.0-preview |
 | PowerShell | 7.2+ (Core) |
 | Required modules | `Az.Accounts` 3.0.0+, `Az.Resources` 7.0.0+, `Microsoft.Graph.Authentication` 2.15.0+ |
-| Install | `Install-Module RiskyRolesAnalyzer -AllowPrerelease` |
+| Getting it | Clone the repository and `Import-Module ./src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.psd1` |
 
 Per-command permissions are on each page under **Requirements and notes**.
 
