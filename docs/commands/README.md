@@ -23,7 +23,7 @@ One file, nothing installed. This is what most people run.
 
 ## Module commands
 
-For acting on the findings rather than reading them. Clone the repository and import the module.
+For acting on the findings rather than reading them. The module is not published anywhere: it lives in this repository, so its commands are documented here rather than on the tool page.
 
 | Command | What it does |
 |---|---|
