@@ -116,7 +116,7 @@
     <h1 id="title">__TITLE__</h1>
     <div class="subtitle" id="subtitle"></div>
   </div>
-  <div class="subtitle" id="legend">Score 0 to 10 expresses live exploitability. Protected rows are reported, never removed by the module.</div>
+  <div class="subtitle" id="legend">Score 0 to 10 expresses live exploitability. Protected rows are reported with the reason, never offered for removal.</div>
 </header>
 <section class="summary" id="summary"></section>
 <section class="controls">
@@ -180,7 +180,7 @@
   <button id="selectVisible">Select visible</button>
   <button id="clearSelection">Clear</button>
   <button id="copyRemoval" class="primary" disabled>Copy removal command</button>
-  <span>The command runs in your PowerShell session, with a prompt and a backup per assignment. Nothing runs from this page.</span>
+  <span>Copies the native command for each selected row. Read them before you run them. Nothing runs from this page.</span>
 </section>
 <section class="table-wrap">
   <table id="data">
@@ -341,7 +341,7 @@ function render() {
     const isAccepted = accepted.has(r.Id);
     return `
       <tr class="${isAccepted ? 'accepted' : ''}${isSelected ? ' selected' : ''}" data-id="${esc(r.Id)}">
-        <td class="select-cell"><input type="checkbox" class="select-cb" data-id="${esc(r.Id)}"${r.Protected ? ' disabled title="Protected: the module will not remove this"' : ''}${isSelected ? ' checked' : ''}></td>
+        <td class="select-cell"><input type="checkbox" class="select-cb" data-id="${esc(r.Id)}"${r.Protected ? ' disabled title="Protected: this one is not offered for removal"' : ''}${isSelected ? ' checked' : ''}></td>
         <td>${scoreHtml}</td>
         <td><span class="badge badge-${esc(r.RoleScope)}">${esc(r.RoleScope)}</span></td>
         <td>${esc(r.RoleName)}${customFlag}</td>
