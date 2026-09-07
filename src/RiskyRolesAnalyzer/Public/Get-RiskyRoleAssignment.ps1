@@ -16,7 +16,7 @@ function Get-RiskyRoleAssignment {
       - permanent versus PIM eligible Entra assignments, scored separately
 
     Each finding carries a 0 to 10 risk score, a severity, the native cleanup command, and a
-    Protected flag for the assignments Remove-RiskyRoleAssignment must not touch: inherited
+    Protected flag for the assignments nothing here offers for removal: inherited
     through a group, PIM eligible, break-glass accounts, and the identity running the audit.
 
     Needs an existing Microsoft Graph session with the read scopes and, unless -SkipAzure is
@@ -33,7 +33,7 @@ function Get-RiskyRoleAssignment {
 
     .PARAMETER BreakGlassAccount
     User principal names or object ids of emergency access accounts. Their assignments are
-    reported and marked Protected. The module cannot know which accounts these are; it warns when
+    reported and marked Protected. It cannot know which accounts these are; it warns when
     an unprotected principal is named like one.
 
     .PARAMETER SkipAzure
@@ -137,7 +137,7 @@ function Get-RiskyRoleAssignment {
     $pattern = [string]$script:Catalog.BreakGlassNamePattern
     $suspects = @($findings | Where-Object { -not $_.Protected -and ($_.PrincipalName -match $pattern -or ($_.UPN -and $_.UPN -match $pattern)) } | ForEach-Object PrincipalName | Sort-Object -Unique)
     if ($suspects.Count) {
-        Write-Warning "These look like emergency access accounts and are not protected: $($suspects -join ', '). Pass -BreakGlassAccount with their UPNs or object ids so Remove-RiskyRoleAssignment refuses them."
+        Write-Warning "These look like emergency access accounts and are not protected: $($suspects -join ', '). Pass -BreakGlassAccount with their UPNs or object ids so they are reported as protected."
     }
 
     $rank = @{ Info = 0; Low = 1; Medium = 2; High = 3; Critical = 4 }

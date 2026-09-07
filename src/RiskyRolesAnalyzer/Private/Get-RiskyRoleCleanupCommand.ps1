@@ -5,7 +5,7 @@ function Get-RiskyRoleCleanupCommand {
     .DESCRIPTION
     Pure rule. Returns Primary and Alt. Findings inherited through a group get the membership
     removal as Primary and the group's own assignment as Alt; PIM eligibility is a portal task.
-    Remove-RiskyRoleAssignment does not run these strings, it makes the equivalent call itself.
+    Nothing executes these strings. They are written for a person to read before running one.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]

@@ -1059,6 +1059,24 @@ Describe 'Standalone audit script' {
         { & (Join-Path $PSScriptRoot '..' 'tools' 'Build-StandaloneScript.ps1') -Check } | Should -Not -Throw
     }
 
+    It 'names no command it does not define' {
+        # The module's help and comments are inlined verbatim. Any sentence that mentions Remove-,
+        # Restore- or Show- describes something the reader of this file does not have, and it has
+        # leaked in repeatedly: report notes, a break-glass warning, parameter help.
+        foreach ($absent in 'Remove-RiskyRoleAssignment', 'Restore-RiskyRoleAssignment', 'Show-RiskyRoleAssignment') {
+            $script:StandaloneText | Should -Not -Match $absent -Because "$absent is not in this build, so nothing here may point at it"
+        }
+        $script:StandaloneText | Should -Not -Match 'Install-Module RiskyRolesAnalyzer' -Because 'the tool is not on the Gallery'
+    }
+
+    It 'has no way to ask for a Graph write scope' {
+        # A read-only audit must not carry a switch that consents a user to
+        # RoleManagement.ReadWrite.Directory and then uses it for nothing. The scope name still
+        # appears in the inlined catalog, where it is only ever compared against, never requested.
+        $script:StandaloneText | Should -Not -Match 'RequestWriteScopes'
+        $script:StandaloneText | Should -Not -Match '\$scopes \+=' -Because 'the scope set handed to Connect-MgGraph is the read set and nothing else'
+    }
+
     It 'parses' {
         $errors = $null
         $null = [System.Management.Automation.Language.Parser]::ParseFile($script:StandalonePath, [ref]$null, [ref]$errors)

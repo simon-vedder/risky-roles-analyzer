@@ -6,7 +6,7 @@ function Resolve-RiskyRoleAssignmentFinding {
     Pure assembly: scope classification, score, severity, cleanup commands, a stable Id and the
     Protected flag. Nothing here calls Azure or Graph, so every rule is provable on a fixture.
 
-    Protected means Remove-RiskyRoleAssignment will report the finding and not touch it:
+    Protected means the finding is reported and never offered for removal:
       - inherited through a group (the fix is a membership or the group's assignment, both yours to decide)
       - PIM eligible or activated (managed in PIM, not by deleting an assignment)
       - a break-glass account named with -BreakGlassAccount

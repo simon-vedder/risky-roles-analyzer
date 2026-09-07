@@ -14,7 +14,7 @@ Read-only audit of privileged access with the blind spots posture tools tend to 
   - permanent versus PIM eligible Entra assignments, scored separately
 
 Each finding carries a 0 to 10 risk score, a severity, the native cleanup command, and a
-Protected flag for the assignments Remove-RiskyRoleAssignment must not touch: inherited
+Protected flag for the assignments nothing here offers for removal: inherited
 through a group, PIM eligible, break-glass accounts, and the identity running the audit.
 
 Needs an existing Microsoft Graph session with the read scopes and, unless -SkipAzure is
@@ -39,7 +39,7 @@ Required permissions, read path only:
 | `-SubscriptionId` | String[] | no | no |  | Audit only these subscriptions. Default: every enabled subscription in the tenant. |
 | `-AdditionalAzureRole` | String[] | no | no |  | Built-in or custom Azure role names to treat as privileged on top of the catalog. |
 | `-AdditionalEntraRole` | String[] | no | no |  | Entra directory role display names to treat as privileged on top of the catalog. |
-| `-BreakGlassAccount` | String[] | no | no |  | User principal names or object ids of emergency access accounts. Their assignments are reported and marked Protected. The module cannot know which accounts these are; it warns when an unprotected principal is named like one. |
+| `-BreakGlassAccount` | String[] | no | no |  | User principal names or object ids of emergency access accounts. Their assignments are reported and marked Protected. It cannot know which accounts these are; it warns when an unprotected principal is named like one. |
 | `-SkipAzure` | SwitchParameter | no | no |  | Entra ID only; no Az session needed. |
 | `-SkipEntra` | SwitchParameter | no | no |  | Azure RBAC only. |
 | `-SkipPim` | SwitchParameter | no | no |  | Do not query PIM eligible assignments (tenants without Entra ID P2). |
