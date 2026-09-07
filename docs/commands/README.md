@@ -13,7 +13,17 @@ Finds privileged Azure RBAC and Entra ID role assignments that posture tools mis
 
 Per-command permissions are on each page under **Requirements and notes**.
 
-## Commands
+## The audit script
+
+One file, nothing installed. This is what most people run.
+
+| Script | What it does |
+|---|---|
+| [Invoke-RiskyRolesAudit.ps1](Invoke-RiskyRolesAudit.md) | Every privileged Azure RBAC and Entra ID role assignment in your tenant, scored, in one HTML report. |
+
+## Module commands
+
+For acting on the findings rather than reading them. Clone the repository and import the module.
 
 | Command | What it does |
 |---|---|
