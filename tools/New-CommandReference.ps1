@@ -194,11 +194,22 @@ foreach ($command in $documented) {
         if ($line -eq '---') { break }
         $body.Add(($line -replace '^## Requirements and notes$', '## Requirements'))
     }
+    # Read before write, and sign in before either: the order someone works in, not the alphabet.
+    $verbRank = @{ Connect = 1; Test = 2; Get = 3; Export = 4; Show = 5; Start = 6; Invoke = 7; Complete = 8; Set = 9; New = 10; Add = 11; Update = 12; Remove = 13; Restore = 14; Disconnect = 15 }
+    $verb = ($name -split '-')[0]
+    $rank = if ($verbRank.ContainsKey($verb)) { $verbRank[$verb] } else { 20 }
     $sitePages[$fileKey] = [pscustomobject]@{
-        Command  = $name
-        Synopsis = $synopsis
-        Order    = if ($isScript) { 1 } else { 10 + ([array]::IndexOf(@($commands.Name), $fileKey) * 5) }
-        Body     = ($body -join "`n").TrimEnd() + "`n"
+        Command   = $name
+        Synopsis  = $synopsis
+        Order     = if ($isScript) { 1 } else { 10 + $rank }
+        Group     = if ($isScript) { 'The audit script' } else { 'The module' }
+        GroupNote = if ($isScript) {
+            'One file you download and run. It reads and writes a report; it changes nothing.'
+        }
+        else {
+            'For acting on the findings rather than reading them. Not on the PowerShell Gallery: clone the repository and import it.'
+        }
+        Body      = ($body -join "`n").TrimEnd() + "`n"
     }
 }
 
@@ -282,6 +293,8 @@ if ($SiteContentPath) {
             "command: $($page.Command)"
             "synopsis: `"$($page.Synopsis -replace '"', '\"')`""
             "order: $($page.Order)"
+            "group: `"$($page.Group)`""
+            "groupNote: `"$($page.GroupNote)`""
             '---'
             ''
         ) -join "`n"
