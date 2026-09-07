@@ -76,6 +76,26 @@ Restore-RiskyRoleAssignment -Path ./RiskyRolesAnalyzer-backup-20260906-142200.js
 `Show-RiskyRoleAssignment` uses `Out-ConsoleGridView` (install `Microsoft.PowerShell.ConsoleGuiTools`)
 or `Out-GridView` on Windows. Entra-only tenants use `-SkipAzure`; tenants without Entra ID P2 use `-SkipPim`.
 
+### Without installing anything
+
+Plenty of tenants do not let an admin install from the PowerShell Gallery, and reading a tool before
+running it with privileged scopes is a reasonable habit. Download it into a folder and import it from
+there instead:
+
+```powershell
+Save-Module RiskyRolesAnalyzer -AllowPrerelease -Path .
+Import-Module ./RiskyRolesAnalyzer/*/RiskyRolesAnalyzer.psd1
+```
+
+That pulls the same package and its three required modules into the current folder and leaves your
+module path untouched. Delete the folder when you are done. `Az.Accounts`, `Az.Resources` and
+`Microsoft.Graph.Authentication` still have to come from somewhere, so this works where the Gallery is
+readable but installing is not.
+
+There is deliberately no `iex (irm ...)` one-liner. This tool asks for scopes that can read every
+privileged assignment in your tenant, and piping a URL straight into your shell is the habit it exists
+to argue against.
+
 ## The report
 
 <p align="center"><img src="docs/images/report.png" alt="HTML report: summary cards, filters, sortable findings with severity, activity status, protection reason and the removal command builder" width="100%"></p>
