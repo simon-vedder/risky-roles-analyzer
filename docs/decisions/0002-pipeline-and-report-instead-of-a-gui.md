@@ -14,7 +14,7 @@ The reference point was DeviceOffboardingManager, a PowerShell WPF tool with a r
 The module has three output layers and no GUI:
 
 1. **Objects.** `Get-RiskyRoleAssignment` returns typed objects; the operable path is the
-   pipeline, `Get-… | Out-ConsoleGridView -PassThru | Remove-… `, with one ShouldProcess prompt
+   pipeline, `Get-… | Show-RiskyRoleAssignment | Remove-… `, with one ShouldProcess prompt
    per assignment.
 2. **HTML report.** Interactive in the browser (filter, sort, select) but without a backend. Its
    one action is "copy the removal command" for the open PowerShell session.

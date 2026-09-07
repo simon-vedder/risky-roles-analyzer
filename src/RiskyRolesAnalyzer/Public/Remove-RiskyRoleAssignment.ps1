@@ -29,7 +29,7 @@ function Remove-RiskyRoleAssignment {
     Get-RiskyRoleAssignment -MinimumSeverity High | Remove-RiskyRoleAssignment -WhatIf
 
     .EXAMPLE
-    Get-RiskyRoleAssignment | Where-Object ActivityStatus -eq 'Disabled' | Out-ConsoleGridView -PassThru | Remove-RiskyRoleAssignment
+    Get-RiskyRoleAssignment | Where-Object ActivityStatus -eq 'Disabled' | Show-RiskyRoleAssignment | Remove-RiskyRoleAssignment
 
     .OUTPUTS
     RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval
