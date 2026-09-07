@@ -12,11 +12,10 @@
 
     Read-only. It signs in with read scopes, reads, and writes an HTML file. It changes nothing.
 
-    To act on the findings rather than just read them, use the module. It returns the findings as
-    objects and can remove an assignment with a prompt, a JSON backup and a refusal for anything
-    inherited through a group, held in PIM, named as break-glass or belonging to you:
+    The report gives you the native command for every finding. If you would rather remove them with
+    a prompt, a JSON backup and a refusal for anything inherited through a group, held in PIM, named
+    as break-glass or belonging to you, the repository holds a module that does exactly that:
 
-        Install-Module RiskyRolesAnalyzer -AllowPrerelease
         https://github.com/simon-vedder/risky-roles-analyzer
 
 .PARAMETER OutputPath
@@ -685,13 +684,19 @@ function updateSelection() {
 }
 
 function removalCommand(ids) {
-  const list = ids.map(i => `'${i}'`).join(', ');
-  return [
-    `# RiskyRolesAnalyzer: ${ids.length} assignment(s) selected in the report generated ${META.generated}`,
-    `# $findings is the output of Get-RiskyRoleAssignment. Run it again if the variable is gone.`,
-    `$findings | Where-Object Id -in @(${list}) | Remove-RiskyRoleAssignment -WhatIf`,
-    `# Drop -WhatIf to remove. Each assignment is confirmed and written to a backup file before the call.`
-  ].join('\n');
+  const rows = DATA.filter(r => ids.indexOf(r.Id) !== -1);
+  const out = [
+    `# ${rows.length} assignment(s) selected in the report generated ${META.generated}`,
+    `# Read every line before you run it. These are the native commands and they ask nothing.`,
+    ''
+  ];
+  rows.forEach(r => {
+    const where = r.ScopeDetail || r.ScopeName || r.Scope || '';
+    out.push(`# ${r.Severity} ${r.RiskScore}  ${r.RoleName}  ${r.PrincipalName}  ${where}`);
+    out.push(r.CleanupPrimary || `# No command available for finding ${r.Id}.`);
+    out.push('');
+  });
+  return out.join('\n').replace(/\s+$/, '');
 }
 
 function openPopup(title, html, ev) {
@@ -719,7 +724,7 @@ function showCleanup(idx, ev) {
   if (!r) return;
   let html = '';
   if (r.Protected) html += `<div class="note">Protected: ${esc(r.ProtectedReason)}. The module reports this and does not remove it; the native command below is for you to judge.</div>`;
-  if (r.RoleScope === 'Entra') html += `<div class="prereq-box"><div class="prereq-title">Prerequisite</div>Graph session with <code>RoleManagement.ReadWrite.Directory</code>: <code>Connect-RiskyRolesAnalyzer -RequestWriteScopes</code></div>`;
+  if (r.RoleScope === 'Entra') html += `<div class="prereq-box"><div class="prereq-title">Prerequisite</div>A Graph session with <code>RoleManagement.ReadWrite.Directory</code>: <code>Connect-MgGraph -Scopes RoleManagement.ReadWrite.Directory</code>, and a role that may remove the assignment.</div>`;
   if (r.ViaGroup) html += `<div class="note"><strong>${esc(r.PrincipalName)}</strong> inherits this role through group <strong>${esc(r.ViaGroup)}</strong>. Choose the right scope:</div>`;
   if (r.CleanupPrimary) {
     html += `<div class="note">${r.ViaGroup ? 'Option A, remove only this principal from the group:' : 'Native command:'}</div>`;
@@ -729,17 +734,13 @@ function showCleanup(idx, ev) {
     html += `<div class="note" style="margin-top:12px">Option B, remove the role from the entire group (affects all members):</div>`;
     html += `<pre id="cleanupAlt">${esc(r.CleanupAlt)}</pre><button class="small-btn" data-copy-from="cleanupAlt">Copy</button>`;
   }
-  if (!r.Protected) {
-    html += `<div class="note" style="margin-top:12px">Or through the module, with prompt and backup:</div>`;
-    html += `<pre id="cleanupModule">${esc(removalCommand([r.Id]))}</pre><button class="small-btn" data-copy-from="cleanupModule">Copy</button>`;
-  }
   openPopup('Cleanup', html, ev);
 }
 
 $('copyRemoval').addEventListener('click', ev => {
   const ids = DATA.filter(r => selected.has(r.Id)).map(r => r.Id);
   if (!ids.length) return;
-  const html = `<div class="note">${ids.length} assignment(s). Paste into the PowerShell session that ran <code>Get-RiskyRoleAssignment</code>.</div>` +
+  const html = `<div class="note">${ids.length} assignment(s). Check every line before you run it: these are the native Azure and Graph commands, and nothing here asks for confirmation.</div>` +
                `<pre id="removalText">${esc(removalCommand(ids))}</pre><button class="small-btn" data-copy-from="removalText">Copy</button>`;
   openPopup('Removal command', html, ev);
 });
@@ -2428,5 +2429,4 @@ foreach ($group in ($findings | Group-Object Severity | Sort-Object { @{ Critica
 }
 Write-Host ''
 Write-Host "Report: $($file.FullName)" -ForegroundColor Green
-Write-Host 'To act on these findings instead of reading them, the module removes them with a prompt and a backup:' -ForegroundColor DarkGray
-Write-Host '  Install-Module RiskyRolesAnalyzer -AllowPrerelease' -ForegroundColor DarkGray
+Write-Host 'Every finding in the report carries the command that would remove it. Check each one before you run it.' -ForegroundColor DarkGray

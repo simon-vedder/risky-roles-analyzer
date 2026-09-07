@@ -70,12 +70,17 @@ tenant already have. Run `Get-Help ./Invoke-RiskyRolesAudit.ps1 -Full` for every
 
 ### The module, when you want to act on the findings
 
-The script hands you a report. The module hands you objects, and can remove an assignment with a
-prompt, a JSON backup and a refusal for anything inherited through a group, held in PIM, named as
-break-glass or belonging to you.
+The report gives you the native command for every finding, and running those is on you. The module
+is the other way: it hands you the findings as objects and removes an assignment with a prompt, a
+JSON backup and a refusal for anything inherited through a group, held in PIM, named as break-glass
+or belonging to you.
+
+It is not on the PowerShell Gallery. Almost everyone wants the report, and a module you install to
+produce an HTML file is the wrong trade. Clone the repository and import it:
 
 ```powershell
-Install-Module RiskyRolesAnalyzer -AllowPrerelease
+git clone https://github.com/simon-vedder/risky-roles-analyzer
+Import-Module ./risky-roles-analyzer/src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.psd1
 
 # 1. Sign in with the read scopes. Nothing changes.
 Connect-RiskyRolesAnalyzer
@@ -102,19 +107,18 @@ Plenty of tenants do not let an admin install from the PowerShell Gallery, and r
 running it with privileged scopes is a reasonable habit. Download it into a folder and import it from
 there instead:
 
+The audit is one file already, so there is nothing to install for the report. Its three required
+modules still have to come from somewhere:
+
 ```powershell
-Save-Module RiskyRolesAnalyzer -AllowPrerelease -Path .
-Import-Module ./RiskyRolesAnalyzer/*/RiskyRolesAnalyzer.psd1
+Save-Module Az.Accounts, Az.Resources, Microsoft.Graph.Authentication -Path .
 ```
 
-That pulls the same package and its three required modules into the current folder and leaves your
-module path untouched. Delete the folder when you are done. `Az.Accounts`, `Az.Resources` and
-`Microsoft.Graph.Authentication` still have to come from somewhere, so this works where the Gallery is
-readable but installing is not.
+That leaves your module path untouched; delete the folder when you are done.
 
 There is deliberately no `iex (irm ...)` one-liner. This tool asks for scopes that can read every
 privileged assignment in your tenant, and piping a URL straight into your shell is the habit it exists
-to argue against.
+to argue against. Download the file, read it, then run it.
 
 ## The report
 

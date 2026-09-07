@@ -169,7 +169,7 @@ $index.Add("| Module version | $($manifest.Version)$(if ($manifest.PrivateData.P
 $index.Add("| PowerShell | $($manifest.PowerShellVersion)+ ($($manifest.CompatiblePSEditions -join ', ')) |")
 $required = @($manifest.RequiredModules | ForEach-Object { "``$($_.Name)`` $($_.Version)+" })
 $index.Add("| Required modules | $(if ($required.Count) { $required -join ', ' } else { 'none' }) |")
-$index.Add("| Install | ``Install-Module $moduleName$(if ($manifest.PrivateData.PSData.Prerelease) { ' -AllowPrerelease' })`` |")
+$index.Add("| Getting it | Clone the repository and ``Import-Module ./src/$moduleName/$moduleName.psd1`` |")
 $index.Add('')
 $index.Add('Per-command permissions are on each page under **Requirements and notes**.')
 $index.Add('')

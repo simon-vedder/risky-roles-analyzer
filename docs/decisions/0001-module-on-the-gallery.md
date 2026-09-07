@@ -1,6 +1,6 @@
 # 0001 — A PowerShell Gallery module, not a script
 
-**Status:** accepted · 2026
+**Status:** accepted 2026-09-06, partly superseded by [0003](0003-the-report-is-a-script-the-module-is-optional.md) on 2026-09-07
 
 ## Context
 
