@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
   examples and output type.
 
 ### Changed
+- `docs/commands` documents the audit script as well, and leads with it. Its twelve parameters,
+  the permissions it needs and its examples were only reachable through `Get-Help` before.
+- The examples show the plain call. `-BreakGlassAccount` was in every one of them, which read as if
+  the audit needed it; it does not, and the report is complete without it.
 - The README leads with the script. The module is the second step, for acting on the findings.
 - **The module is no longer published to the PowerShell Gallery.** `0.1.0-preview` is unlisted, which
   keeps the name and stops it being found. Installing a module to produce an HTML report is the wrong

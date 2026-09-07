@@ -59,14 +59,25 @@ Most people want the report. That is one file, nothing to install:
 ```powershell
 # Download the audit script and run it. Read-only.
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/simon-vedder/risky-roles-analyzer/main/dist/Invoke-RiskyRolesAudit.ps1' -OutFile 'Invoke-RiskyRolesAudit.ps1'
-./Invoke-RiskyRolesAudit.ps1 -BreakGlassAccount 'breakglass@contoso.com'
+./Invoke-RiskyRolesAudit.ps1
 ```
 
 Every release also carries the script as an asset if you would rather pin a version than track `main`.
 
 It signs in with read scopes, reads Azure RBAC and Entra ID, and writes the HTML report. It needs
 `Az.Accounts`, `Az.Resources` and `Microsoft.Graph.Authentication`, which most people auditing a
-tenant already have. Run `Get-Help ./Invoke-RiskyRolesAudit.ps1 -Full` for every switch.
+tenant already have.
+
+Two switches are worth knowing on the first run. Name your emergency access accounts so the report
+marks them instead of listing them as things to clean up, and drop the PIM queries on a tenant
+without Entra ID P2:
+
+```powershell
+./Invoke-RiskyRolesAudit.ps1 -BreakGlassAccount 'breakglass@contoso.com' -SkipPim
+```
+
+Every parameter is in the [script reference](docs/commands/Invoke-RiskyRolesAudit.md), or in
+`Get-Help ./Invoke-RiskyRolesAudit.ps1 -Full`.
 
 ### The module, when you want to act on the findings
 
@@ -86,7 +97,7 @@ Import-Module ./risky-roles-analyzer/src/RiskyRolesAnalyzer/RiskyRolesAnalyzer.p
 Connect-RiskyRolesAnalyzer
 
 # 2. Look. Objects for the pipeline, one HTML file for everyone else.
-$findings = Get-RiskyRoleAssignment -BreakGlassAccount 'breakglass@contoso.com'
+$findings = Get-RiskyRoleAssignment
 $findings | Format-Table
 $findings | Export-RiskyRoleReport -Open
 
@@ -175,7 +186,7 @@ activation.
 ## Documentation
 
 - Tool page: [simonvedder.com/tools/risky-roles-analyzer](https://simonvedder.com/tools/risky-roles-analyzer)
-- **[Command reference](docs/commands/README.md)** — every command with its parameters, permissions and examples
+- **[Script and command reference](docs/commands/README.md)** — [the audit script](docs/commands/Invoke-RiskyRolesAudit.md) and every module command, with parameters, permissions and examples
 - [Verification log](docs/verification.md), [known issues](KNOWN-ISSUES.md), [when not to use this](docs/when-not-to-use-this.md)
 - [Architecture decisions](docs/decisions), [releasing](docs/release.md), [contributing](CONTRIBUTING.md), [security](SECURITY.md), [changelog](CHANGELOG.md)
 

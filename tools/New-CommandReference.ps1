@@ -60,11 +60,20 @@ function Format-Cell {
 
 $pages = @{}
 
-foreach ($command in $commands) {
-    $help = Get-Help -Name $command.Name -Full
+# The audit script is the primary entry point, so it gets a page from its own help just like the
+# commands do. Get-Help on a .ps1 returns the same shape as for a function.
+$scriptPath = Join-Path $repoRoot 'dist' 'Invoke-RiskyRolesAudit.ps1'
+$documented = @($commands)
+if (Test-Path -Path $scriptPath) { $documented = @(Get-Item -Path $scriptPath) + $documented }
+
+foreach ($command in $documented) {
+    $isScript = $command -is [System.IO.FileInfo]
+    $name = if ($isScript) { $command.BaseName } else { $command.Name }
+    $target = if ($isScript) { $command.FullName } else { $command.Name }
+    $help = Get-Help -Name $target -Full
     $lines = [System.Collections.Generic.List[string]]::new()
 
-    $lines.Add("# $($command.Name)")
+    $lines.Add("# $name")
     $lines.Add('')
     $synopsis = Format-HelpText $help.Synopsis
     if ($synopsis) { $lines.Add("> $synopsis"); $lines.Add('') }
@@ -76,8 +85,14 @@ foreach ($command in $commands) {
     $lines.Add('')
     $lines.Add('```powershell')
     # Get-Command -Syntax renders the parameter sets as text; the help object does not.
-    foreach ($set in @((Get-Command -Name $command.Name -Syntax) -split "`r?`n")) {
+    foreach ($set in @((Get-Command -Name $target -Syntax) -split "`r?`n")) {
         $text = $set.Trim()
+        # A script's syntax carries the absolute path it was read from, and an alias line. Neither
+        # means anything to a reader, so both are reduced to how the file is actually called.
+        if ($isScript) {
+            if ($text -match '\(alias\)') { continue }
+            $text = $text.Replace($command.FullName, "./$($command.Name)")
+        }
         if ($text) { $lines.Add($text); $lines.Add('') }
     }
     while ($lines.Count -and $lines[$lines.Count - 1] -eq '') { $lines.RemoveAt($lines.Count - 1) }
@@ -113,7 +128,7 @@ foreach ($command in $commands) {
     }
     $lines.Add('')
 
-    $supportsShouldProcess = $command.Parameters.ContainsKey('WhatIf')
+    $supportsShouldProcess = (-not $isScript) -and $command.Parameters.ContainsKey('WhatIf')
     if ($supportsShouldProcess) {
         $lines.Add('Supports `-WhatIf` and `-Confirm`.')
         $lines.Add('')
@@ -152,7 +167,7 @@ foreach ($command in $commands) {
     $lines.Add('')
     $lines.Add('*Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*')
 
-    $pages["$($command.Name).md"] = ($lines -join "`n").TrimEnd() + "`n"
+    $pages["$name.md"] = ($lines -join "`n").TrimEnd() + "`n"
 }
 
 # ---- index -------------------------------------------------------------------------------------
@@ -173,7 +188,20 @@ $index.Add("| Getting it | Clone the repository and ``Import-Module ./src/$modul
 $index.Add('')
 $index.Add('Per-command permissions are on each page under **Requirements and notes**.')
 $index.Add('')
-$index.Add('## Commands')
+if (Test-Path -Path $scriptPath) {
+    $index.Add('## The audit script')
+    $index.Add('')
+    $index.Add('One file, nothing installed. This is what most people run.')
+    $index.Add('')
+    $index.Add('| Script | What it does |')
+    $index.Add('|---|---|')
+    $index.Add("| [Invoke-RiskyRolesAudit.ps1](Invoke-RiskyRolesAudit.md) | $(Format-Cell (Format-HelpText (Get-Help -Name $scriptPath).Synopsis)) |")
+    $index.Add('')
+}
+
+$index.Add('## Module commands')
+$index.Add('')
+$index.Add('For acting on the findings rather than reading them. Clone the repository and import the module.')
 $index.Add('')
 $index.Add('| Command | What it does |')
 $index.Add('|---|---|')
