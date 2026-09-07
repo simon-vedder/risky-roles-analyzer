@@ -153,8 +153,8 @@
     # -BreakGlassAccount names, and warns when an unprotected principal matches this pattern.
     BreakGlassNamePattern = '(?i)break.?glass|emergency.?access|^bg[-_ ]?\d|^emergency'
 
-    # Graph scopes. The read set is what Get-RiskyRoleAssignment needs; the write scope is only
-    # requested with Connect-RiskyRolesAnalyzer -RequestWriteScopes and only used by Remove-.
+    # Graph scopes. The read set is what Get-RiskyRoleAssignment needs. The write scope is only
+    # ever requested by the module's removal path; the standalone audit never asks for it.
     GraphScopes          = @{
         Read  = @('RoleManagement.Read.Directory', 'Directory.Read.All', 'Group.Read.All', 'Application.Read.All')
         Write = @('RoleManagement.ReadWrite.Directory')

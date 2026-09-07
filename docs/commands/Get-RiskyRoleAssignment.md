@@ -14,7 +14,7 @@ Read-only audit of privileged access with the blind spots posture tools tend to 
   - permanent versus PIM eligible Entra assignments, scored separately
 
 Each finding carries a 0 to 10 risk score, a severity, the native cleanup command, and a
-Protected flag for the assignments Remove-RiskyRoleAssignment must not touch: inherited
+Protected flag for the assignments nothing here offers for removal: inherited
 through a group, PIM eligible, break-glass accounts, and the identity running the audit.
 
 Needs an existing Microsoft Graph session with the read scopes and, unless -SkipAzure is

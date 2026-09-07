@@ -303,8 +303,8 @@ $script:Catalog = @{
     # -BreakGlassAccount names, and warns when an unprotected principal matches this pattern.
     BreakGlassNamePattern = '(?i)break.?glass|emergency.?access|^bg[-_ ]?\d|^emergency'
 
-    # Graph scopes. The read set is what Get-RiskyRoleAssignment needs; the write scope is only
-    # requested with Connect-RiskyRolesAnalyzer -RequestWriteScopes and only used by Remove-.
+    # Graph scopes. The read set is what Get-RiskyRoleAssignment needs. The write scope is only
+    # ever requested by the module's removal path; the standalone audit never asks for it.
     GraphScopes          = @{
         Read  = @('RoleManagement.Read.Directory', 'Directory.Read.All', 'Group.Read.All', 'Application.Read.All')
         Write = @('RoleManagement.ReadWrite.Directory')
@@ -1392,7 +1392,7 @@ function Get-RiskyRoleCleanupCommand {
     .DESCRIPTION
     Pure rule. Returns Primary and Alt. Findings inherited through a group get the membership
     removal as Primary and the group's own assignment as Alt; PIM eligibility is a portal task.
-    Remove-RiskyRoleAssignment does not run these strings, it makes the equivalent call itself.
+    Nothing executes these strings. They are written for a person to read before running one.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -1807,7 +1807,7 @@ function Resolve-RiskyRoleAssignmentFinding {
     Pure assembly: scope classification, score, severity, cleanup commands, a stable Id and the
     Protected flag. Nothing here calls Azure or Graph, so every rule is provable on a fixture.
 
-    Protected means Remove-RiskyRoleAssignment will report the finding and not touch it:
+    Protected means the finding is reported and never offered for removal:
       - inherited through a group (the fix is a membership or the group's assignment, both yours to decide)
       - PIM eligible or activated (managed in PIM, not by deleting an assignment)
       - a break-glass account named with -BreakGlassAccount
@@ -2047,15 +2047,12 @@ function Connect-RiskyRolesAnalyzer {
     Connects Microsoft Graph with the read-only scopes Get-RiskyRoleAssignment uses
     (RoleManagement.Read.Directory, Directory.Read.All, Group.Read.All, Application.Read.All)
     and Azure with Connect-AzAccount for the same tenant. Sessions that already carry the scopes
-    are reused. The write scope RoleManagement.ReadWrite.Directory is requested only with
-    -RequestWriteScopes; Remove-RiskyRoleAssignment needs it for Entra findings, nothing else does.
+    are reused. This build is read-only and never asks for a write scope.
 
     .PARAMETER TenantId
     Tenant to sign in to. Without it, the Graph sign-in picks the account's home tenant and
     Azure follows the tenant Graph ended up in.
 
-    .PARAMETER RequestWriteScopes
-    Also request RoleManagement.ReadWrite.Directory. Off by default: the audit is read-only.
 
     .PARAMETER SkipAzure
     Graph only. Use with Get-RiskyRoleAssignment -SkipAzure when Azure RBAC is out of scope.
@@ -2067,7 +2064,7 @@ function Connect-RiskyRolesAnalyzer {
     Connect-RiskyRolesAnalyzer
 
     .EXAMPLE
-    Connect-RiskyRolesAnalyzer -TenantId 00000000-0000-0000-0000-000000000000 -RequestWriteScopes
+    Connect-RiskyRolesAnalyzer -TenantId 00000000-0000-0000-0000-000000000000
 
     .OUTPUTS
     System.Management.Automation.PSCustomObject with TenantId, GraphAccount, GraphScopes and AzureAccount.
@@ -2078,8 +2075,6 @@ function Connect-RiskyRolesAnalyzer {
     Azure Reader on every subscription you want to audit, or at a management group above them.
     Entra ID P2 for the PIM parts; without it Get-RiskyRoleAssignment warns once and continues.
 
-    The write path adds RoleManagement.ReadWrite.Directory (-RequestWriteScopes) and, on the Azure
-    side, Microsoft.Authorization/roleAssignments/delete on the scope.
 
     The Graph session lives in this PowerShell process. A new pwsh starts without it, while the Azure
     session is read back from disk, so run Connect- and Get- in the same session.
@@ -2091,9 +2086,6 @@ function Connect-RiskyRolesAnalyzer {
         [string]$TenantId,
 
         [Parameter()]
-        [switch]$RequestWriteScopes,
-
-        [Parameter()]
         [switch]$SkipAzure,
 
         [Parameter()]
@@ -2101,7 +2093,6 @@ function Connect-RiskyRolesAnalyzer {
     )
 
     $scopes = @($script:Catalog.GraphScopes.Read)
-    if ($RequestWriteScopes) { $scopes += $script:Catalog.GraphScopes.Write }
 
     $graph = Get-MgContext -ErrorAction SilentlyContinue
     $graphTenant = if ($graph) { [string](Get-PropertyOrDefault -InputObject $graph -Name 'TenantId' -Default '') } else { '' }
@@ -2158,7 +2149,7 @@ function Get-RiskyRoleAssignment {
       - permanent versus PIM eligible Entra assignments, scored separately
 
     Each finding carries a 0 to 10 risk score, a severity, the native cleanup command, and a
-    Protected flag for the assignments Remove-RiskyRoleAssignment must not touch: inherited
+    Protected flag for the assignments nothing here offers for removal: inherited
     through a group, PIM eligible, break-glass accounts, and the identity running the audit.
 
     Needs an existing Microsoft Graph session with the read scopes and, unless -SkipAzure is
@@ -2279,7 +2270,7 @@ function Get-RiskyRoleAssignment {
     $pattern = [string]$script:Catalog.BreakGlassNamePattern
     $suspects = @($findings | Where-Object { -not $_.Protected -and ($_.PrincipalName -match $pattern -or ($_.UPN -and $_.UPN -match $pattern)) } | ForEach-Object PrincipalName | Sort-Object -Unique)
     if ($suspects.Count) {
-        Write-Warning "These look like emergency access accounts and are not protected: $($suspects -join ', '). Pass -BreakGlassAccount with their UPNs or object ids so Remove-RiskyRoleAssignment refuses them."
+        Write-Warning "These look like emergency access accounts and are not protected: $($suspects -join ', '). Pass -BreakGlassAccount with their UPNs or object ids so they are reported as protected."
     }
 
     $rank = @{ Info = 0; Low = 1; Medium = 2; High = 3; Critical = 4 }
@@ -2296,7 +2287,7 @@ function Export-RiskyRoleReport {
     .DESCRIPTION
     One file, no external resources, opens anywhere: summary cards, search, filters, sortable
     columns, CSV export, the native cleanup command per finding, and a checkbox per removable
-    finding that builds the Remove-RiskyRoleAssignment command for your PowerShell session.
+    finding that collects those commands into one block you can paste.
     Nothing runs from the page; it only helps you decide and copy.
 
     .PARAMETER InputObject

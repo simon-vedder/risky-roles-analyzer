@@ -229,11 +229,64 @@ foreach ($file in @(Get-ChildItem -Path (Join-Path $moduleRoot 'Private') -Filte
     $parts.Add("`n" + (Get-FunctionBody -Path $file.FullName))
 }
 
+# Remove-, Restore- and Show- are not in this build, so the write scope has nothing to serve. The
+# surface is cut out of the inlined Connect- rather than left as a parameter that asks a user for
+# RoleManagement.ReadWrite.Directory and then uses it for nothing. Every cut is asserted: change the
+# source wording and the build fails here instead of shipping a half-removed parameter.
+$writePathCuts = @(
+    @{ Find = @'
+ The write scope RoleManagement.ReadWrite.Directory is requested only with
+    -RequestWriteScopes; Remove-RiskyRoleAssignment needs it for Entra findings, nothing else does.
+'@; Replace = @'
+ This build is read-only and never asks for a write scope.
+'@ },
+    @{ Find = @'
+
+    .PARAMETER RequestWriteScopes
+    Also request RoleManagement.ReadWrite.Directory. Off by default: the audit is read-only.
+'@; Replace = '' },
+    @{ Find = @'
+    Connect-RiskyRolesAnalyzer -TenantId 00000000-0000-0000-0000-000000000000 -RequestWriteScopes
+'@; Replace = @'
+    Connect-RiskyRolesAnalyzer -TenantId 00000000-0000-0000-0000-000000000000
+'@ },
+    @{ Find = @'
+
+    The write path adds RoleManagement.ReadWrite.Directory (-RequestWriteScopes) and, on the Azure
+    side, Microsoft.Authorization/roleAssignments/delete on the scope.
+'@; Replace = '' },
+    @{ Find = @'
+
+        [Parameter()]
+        [switch]$RequestWriteScopes,
+
+'@; Replace = @'
+
+'@ },
+    @{ Find = @'
+    $scopes = @($script:Catalog.GraphScopes.Read)
+    if ($RequestWriteScopes) { $scopes += $script:Catalog.GraphScopes.Write }
+'@; Replace = @'
+    $scopes = @($script:Catalog.GraphScopes.Read)
+'@ }
+)
+
 $parts.Add("`n# ---- Commands (src/RiskyRolesAnalyzer/Public) ---------------------------------------------------")
 foreach ($name in $publicNeeded) {
     $path = Join-Path $moduleRoot 'Public' "$name.ps1"
     if (-not (Test-Path -Path $path)) { throw "Missing $path" }
-    $parts.Add("`n" + (Get-FunctionBody -Path $path))
+    $body = Get-FunctionBody -Path $path
+    if ($name -eq 'Connect-RiskyRolesAnalyzer') {
+        foreach ($cut in $writePathCuts) {
+            # -like is out: [Parameter()] would be read as a wildcard character class.
+            if (-not $body.Contains($cut.Find)) {
+                throw "Connect-RiskyRolesAnalyzer no longer contains the write-path text this build removes. Update `$writePathCuts:`n$($cut.Find)"
+            }
+            $body = $body.Replace($cut.Find, $cut.Replace)
+        }
+        if ($body -match 'RequestWriteScopes') { throw 'RequestWriteScopes survived the cut in the standalone build.' }
+    }
+    $parts.Add("`n" + $body)
 }
 
 # In the module this function reads the file; here the template is already in memory.

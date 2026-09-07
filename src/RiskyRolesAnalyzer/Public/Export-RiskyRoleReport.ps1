@@ -6,7 +6,7 @@ function Export-RiskyRoleReport {
     .DESCRIPTION
     One file, no external resources, opens anywhere: summary cards, search, filters, sortable
     columns, CSV export, the native cleanup command per finding, and a checkbox per removable
-    finding that builds the Remove-RiskyRoleAssignment command for your PowerShell session.
+    finding that collects those commands into one block you can paste.
     Nothing runs from the page; it only helps you decide and copy.
 
     .PARAMETER InputObject
