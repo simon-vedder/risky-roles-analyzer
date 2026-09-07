@@ -148,7 +148,7 @@ foreach ($command in $commands) {
 
     $lines.Add('---')
     $lines.Add('')
-    $lines.Add("[All commands](README.md) · [Module README](../../README.md)")
+    $lines.Add("[All commands](README.md) | [Module README](../../README.md)")
     $lines.Add('')
     $lines.Add('*Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*')
 
@@ -202,7 +202,7 @@ if ($Check) {
         if (-not $pages.ContainsKey($file.Name)) { $problems.Add("orphaned: docs/commands/$($file.Name)") }
     }
     if ($problems.Count) {
-        $problems | ForEach-Object { Write-Host "  $_" }
+        $problems | ForEach-Object { Write-Warning $_ }
         throw "The command reference is not current. Run ./tools/New-CommandReference.ps1 and commit the result."
     }
     "The command reference matches the help of $($commands.Count) command(s)."

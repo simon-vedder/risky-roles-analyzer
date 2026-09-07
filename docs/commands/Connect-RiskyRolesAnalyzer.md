@@ -56,6 +56,6 @@ Connect-RiskyRolesAnalyzer -TenantId 00000000-0000-0000-0000-000000000000 -Reque
 
 ---
 
-[All commands](README.md) · [Module README](../../README.md)
+[All commands](README.md) | [Module README](../../README.md)
 
 *Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*

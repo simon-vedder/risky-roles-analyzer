@@ -54,6 +54,24 @@ administrator or consultant who has to produce that list on Monday and clean it 
 
 ## Quick start
 
+Most people want the report. That is one file, nothing to install:
+
+```powershell
+# Download the audit script and run it. Read-only.
+Invoke-WebRequest -Uri 'https://github.com/simon-vedder/risky-roles-analyzer/releases/latest/download/Invoke-RiskyRolesAudit.ps1' -OutFile 'Invoke-RiskyRolesAudit.ps1'
+./Invoke-RiskyRolesAudit.ps1 -BreakGlassAccount 'breakglass@contoso.com'
+```
+
+It signs in with read scopes, reads Azure RBAC and Entra ID, and writes the HTML report. It needs
+`Az.Accounts`, `Az.Resources` and `Microsoft.Graph.Authentication`, which most people auditing a
+tenant already have. Run `Get-Help ./Invoke-RiskyRolesAudit.ps1 -Full` for every switch.
+
+### The module, when you want to act on the findings
+
+The script hands you a report. The module hands you objects, and can remove an assignment with a
+prompt, a JSON backup and a refusal for anything inherited through a group, held in PIM, named as
+break-glass or belonging to you.
+
 ```powershell
 Install-Module RiskyRolesAnalyzer -AllowPrerelease
 

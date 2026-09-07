@@ -54,6 +54,6 @@ Get-Content ./backup.json | ConvertFrom-Json | Where-Object PrincipalName -eq 'D
 
 ---
 
-[All commands](README.md) · [Module README](../../README.md)
+[All commands](README.md) | [Module README](../../README.md)
 
 *Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*

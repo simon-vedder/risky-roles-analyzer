@@ -45,6 +45,10 @@ jobs:
         shell: pwsh
         run: ./tools/New-CommandReference.ps1 -Check
 
+      - name: Standalone script is current
+        shell: pwsh
+        run: ./tools/Build-StandaloneScript.ps1 -Check
+
       - name: Analyze
         shell: pwsh
         run: |

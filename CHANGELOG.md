@@ -5,6 +5,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- A single-file audit script, `dist/Invoke-RiskyRolesAudit.ps1`, attached to every release.
+  Download one file, run it, get the report. No module to install, no Gallery to trust, which is
+  the right shape for something most people run once a quarter. It is generated from the module
+  sources by `tools/Build-StandaloneScript.ps1`, so the rules in it are the tested ones, and CI
+  fails when the committed file drifts. The write path is deliberately not in it: removing an
+  assignment belongs where the input is typed, every call is confirmed and everything is backed up.
+- `docs/commands`, a generated reference: one page per command with its parameters, permissions,
+  examples and output type.
+
+### Changed
+- The README leads with the script. The module is the second step, for acting on the findings.
+
 ### Fixed
 - The cleanup commands in the report quote role, scope and principal values properly. A role named
   with an apostrophe produced a command that does not parse, and a name crafted as
