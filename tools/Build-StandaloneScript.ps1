@@ -187,8 +187,8 @@ Set-StrictMode -Version Latest
 
 # ================================================================================================
 #  Generated file. Everything below comes from the module sources; edit those, then rebuild with
-#  tools/Build-StandaloneScript.ps1. The module is the tested version: 144 Pester tests run against
-#  a synthetic tenant, and the rules here are the same functions.
+#  tools/Build-StandaloneScript.ps1. The rules here are the same functions the Pester suite runs
+#  against a synthetic tenant, so this file inherits that coverage rather than repeating it.
 # ================================================================================================
 
 `$script:ModuleVersion = '$version'

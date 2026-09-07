@@ -136,8 +136,8 @@ $ErrorActionPreference = 'Stop'
 
 # ================================================================================================
 #  Generated file. Everything below comes from the module sources; edit those, then rebuild with
-#  tools/Build-StandaloneScript.ps1. The module is the tested version: 144 Pester tests run against
-#  a synthetic tenant, and the rules here are the same functions.
+#  tools/Build-StandaloneScript.ps1. The rules here are the same functions the Pester suite runs
+#  against a synthetic tenant, so this file inherits that coverage rather than repeating it.
 # ================================================================================================
 
 $script:ModuleVersion = '0.1.0-preview'
@@ -299,7 +299,7 @@ $script:Catalog = @{
         )
     }
 
-    # Names that usually mean an emergency access account. Only a hint: the module protects what
+    # Names that usually mean an emergency access account. Only a hint: the audit protects what
     # -BreakGlassAccount names, and warns when an unprotected principal matches this pattern.
     BreakGlassNamePattern = '(?i)break.?glass|emergency.?access|^bg[-_ ]?\d|^emergency'
 
@@ -735,7 +735,7 @@ function showCleanup(idx, ev) {
   const r = filtered[idx];
   if (!r) return;
   let html = '';
-  if (r.Protected) html += `<div class="note">Protected: ${esc(r.ProtectedReason)}. The module reports this and does not remove it; the native command below is for you to judge.</div>`;
+  if (r.Protected) html += `<div class="note">Protected: ${esc(r.ProtectedReason)}. The audit reports this one and never offers it for removal; the native command below is for you to judge.</div>`;
   if (r.RoleScope === 'Entra') html += `<div class="prereq-box"><div class="prereq-title">Prerequisite</div>A Graph session with <code>RoleManagement.ReadWrite.Directory</code>: <code>Connect-MgGraph -Scopes RoleManagement.ReadWrite.Directory</code>, and a role that may remove the assignment.</div>`;
   if (r.ViaGroup) html += `<div class="note"><strong>${esc(r.PrincipalName)}</strong> inherits this role through group <strong>${esc(r.ViaGroup)}</strong>. Choose the right scope:</div>`;
   if (r.CleanupPrimary) {
@@ -2175,7 +2175,7 @@ function Get-RiskyRoleAssignment {
 
     .PARAMETER BreakGlassAccount
     User principal names or object ids of emergency access accounts. Their assignments are
-    reported and marked Protected. The module cannot know which accounts these are; it warns when
+    reported and marked Protected. It cannot know which accounts these are; it warns when
     an unprotected principal is named like one.
 
     .PARAMETER SkipAzure

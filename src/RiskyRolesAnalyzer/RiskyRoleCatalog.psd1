@@ -149,7 +149,7 @@
         )
     }
 
-    # Names that usually mean an emergency access account. Only a hint: the module protects what
+    # Names that usually mean an emergency access account. Only a hint: the audit protects what
     # -BreakGlassAccount names, and warns when an unprotected principal matches this pattern.
     BreakGlassNamePattern = '(?i)break.?glass|emergency.?access|^bg[-_ ]?\d|^emergency'
 

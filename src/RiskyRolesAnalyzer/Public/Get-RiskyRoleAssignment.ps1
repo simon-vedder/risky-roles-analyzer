@@ -33,7 +33,7 @@ function Get-RiskyRoleAssignment {
 
     .PARAMETER BreakGlassAccount
     User principal names or object ids of emergency access accounts. Their assignments are
-    reported and marked Protected. The module cannot know which accounts these are; it warns when
+    reported and marked Protected. It cannot know which accounts these are; it warns when
     an unprotected principal is named like one.
 
     .PARAMETER SkipAzure
