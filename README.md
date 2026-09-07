@@ -58,9 +58,11 @@ Most people want the report. That is one file, nothing to install:
 
 ```powershell
 # Download the audit script and run it. Read-only.
-Invoke-WebRequest -Uri 'https://github.com/simon-vedder/risky-roles-analyzer/releases/latest/download/Invoke-RiskyRolesAudit.ps1' -OutFile 'Invoke-RiskyRolesAudit.ps1'
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/simon-vedder/risky-roles-analyzer/main/dist/Invoke-RiskyRolesAudit.ps1' -OutFile 'Invoke-RiskyRolesAudit.ps1'
 ./Invoke-RiskyRolesAudit.ps1 -BreakGlassAccount 'breakglass@contoso.com'
 ```
+
+Every release also carries the script as an asset if you would rather pin a version than track `main`.
 
 It signs in with read scopes, reads Azure RBAC and Entra ID, and writes the HTML report. It needs
 `Az.Accounts`, `Az.Resources` and `Microsoft.Graph.Authentication`, which most people auditing a
