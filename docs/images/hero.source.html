@@ -41,17 +41,17 @@
   <text x="76" y="230" fill="#ffffff" font-size="72" font-weight="800" letter-spacing="-2">RiskyRolesAnalyzer</text>
   <text x="80" y="288" fill="#aab4c8" font-size="28" font-weight="400">Every privileged role assignment, hidden ones included.</text>
   <text x="80" y="330" fill="#6f7d99" font-size="21">Azure RBAC and Entra ID · nested groups · custom roles · dormant apps</text>
-  <text x="80" y="362" fill="#6f7d99" font-size="21">Read-only by default · backup before every change · MIT</text>
+  <text x="80" y="362" fill="#6f7d99" font-size="21">Read-only · one self-contained HTML file · MIT</text>
 
   <g class="mono" font-size="19">
     <line x1="80" y1="470" x2="760" y2="470" stroke="url(#chain)" stroke-width="3" stroke-linecap="round"/>
     <circle cx="80" cy="470" r="9" fill="#0b1220" stroke="#38bdf8" stroke-width="3"/>
-    <text x="80" y="510" fill="#8fd3ff" text-anchor="start" font-weight="600">Get</text>
+    <text x="80" y="510" fill="#8fd3ff" text-anchor="start" font-weight="600">Download</text>
     <circle cx="420" cy="470" r="9" fill="#0078d4" stroke="#38bdf8" stroke-width="3"/>
-    <text x="420" y="510" fill="#8fb8ec" text-anchor="middle">Report</text>
+    <text x="420" y="510" fill="#8fb8ec" text-anchor="middle">Run</text>
     <circle cx="760" cy="470" r="9" fill="#22c55e" stroke="#86efac" stroke-width="3"/>
-    <text x="760" y="510" fill="#86efac" text-anchor="end" font-weight="600">Remove -WhatIf</text>
-    <text x="80" y="548" fill="#55627d" font-size="17">The tool proposes, you decide.</text>
+    <text x="760" y="510" fill="#86efac" text-anchor="end" font-weight="600">Report</text>
+    <text x="80" y="548" fill="#55627d" font-size="17">One file. Nothing installed, nothing changed.</text>
   </g>
 
   <!-- right: terminal card. Replace the lines with the tool's real quick start. -->
@@ -62,11 +62,11 @@
   </g>
   <circle cx="930" cy="180" r="6" fill="#ef4444"/><circle cx="952" cy="180" r="6" fill="#f59e0b"/><circle cx="974" cy="180" r="6" fill="#22c55e"/>
   <g class="mono" font-size="21">
-    <text x="930" y="240" fill="#8fd3ff">PS&gt; </text><text x="985" y="240" fill="#e2e8f0">Install-Module RiskyRolesAnalyzer</text>
-    <text x="930" y="290" fill="#8fd3ff">PS&gt; </text><text x="985" y="290" fill="#e2e8f0">Get-RiskyRoleAssignment | Format-Table</text>
-    <text x="960" y="340" fill="#fca5a5">Critical</text><text x="1075" y="340" fill="#aab4c8">Global Admin   app, no valid creds</text>
-    <text x="960" y="378" fill="#f59e0b">High</text><text x="1075" y="378" fill="#aab4c8">Owner via group   Cloud Admins</text>
-    <text x="930" y="440" fill="#8fd3ff">PS&gt; </text><text x="985" y="440" fill="#e2e8f0">... | Remove-RiskyRoleAssignment -WhatIf</text>
+    <text x="930" y="240" fill="#8fd3ff">PS&gt; </text><text x="985" y="240" fill="#e2e8f0">./Invoke-RiskyRolesAudit.ps1</text>
+    <text x="960" y="292" fill="#fca5a5">Critical</text><text x="1075" y="292" fill="#aab4c8">Global Admin   app, no valid creds</text>
+    <text x="960" y="330" fill="#f59e0b">High</text><text x="1075" y="330" fill="#aab4c8">Owner via group   Cloud Admins</text>
+    <text x="960" y="368" fill="#8fd3ff">Low</text><text x="1075" y="368" fill="#aab4c8">Directory Readers   disabled user</text>
+    <text x="930" y="430" fill="#86efac">Report: RiskyRolesAnalyzer-report.html</text>
   </g>
 </svg>
 </body></html>
