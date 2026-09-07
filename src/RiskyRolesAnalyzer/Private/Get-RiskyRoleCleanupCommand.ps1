@@ -40,35 +40,42 @@ function Get-RiskyRoleCleanupCommand {
         [string]$ViaGroupId
     )
 
+    # Everything that lands inside a quoted string in a command a person may paste.
+    $roleLiteral = ConvertTo-PowerShellLiteral -Value $RoleName
+    $scopeLiteral = ConvertTo-PowerShellLiteral -Value $Scope
+    $principalLiteral = ConvertTo-PowerShellLiteral -Value $PrincipalId
+    $groupLiteral = ConvertTo-PowerShellLiteral -Value $ViaGroupId
+    $assignmentLiteral = ConvertTo-PowerShellLiteral -Value $AssignmentId
+
     $primary = $null
     $alt = $null
 
     if ($ViaGroupId) {
-        $primary = "Remove-AzADGroupMember -GroupObjectId '$ViaGroupId' -MemberObjectId '$PrincipalId'"
+        $primary = "Remove-AzADGroupMember -GroupObjectId '$groupLiteral' -MemberObjectId '$principalLiteral'"
         $alt = if ($RoleScope -eq 'Azure') {
-            "Remove-AzRoleAssignment -ObjectId '$ViaGroupId' -RoleDefinitionName '$RoleName' -Scope '$Scope'  # removes the role for the ENTIRE group"
+            "Remove-AzRoleAssignment -ObjectId '$groupLiteral' -RoleDefinitionName '$roleLiteral' -Scope '$scopeLiteral'  # removes the role for the ENTIRE group"
         }
         elseif ($AssignmentId) {
-            "Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$AssignmentId'  # removes the role for the ENTIRE group"
+            "Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$assignmentLiteral'  # removes the role for the ENTIRE group"
         }
         else {
-            "# Remove the group's assignment in the Entra portal: Roles and administrators > $RoleName"
+            "# Remove the group's assignment in the Entra portal: Roles and administrators > $roleLiteral"
         }
     }
     elseif ($RoleScope -eq 'Azure') {
-        $primary = "Remove-AzRoleAssignment -ObjectId '$PrincipalId' -RoleDefinitionName '$RoleName' -Scope '$Scope'"
+        $primary = "Remove-AzRoleAssignment -ObjectId '$principalLiteral' -RoleDefinitionName '$roleLiteral' -Scope '$scopeLiteral'"
     }
     elseif ($AssignmentType -eq 'Eligible') {
-        $primary = "# Remove the PIM eligibility of '$PrincipalId' for '$RoleName' in the Entra portal: PIM > Entra roles > Eligible assignments"
+        $primary = "# Remove the PIM eligibility of '$principalLiteral' for '$roleLiteral' in the Entra portal: PIM > Entra roles > Eligible assignments"
     }
     elseif ($AssignmentType -eq 'Activated') {
-        $primary = "# '$PrincipalId' has activated '$RoleName' through PIM. Deactivate it or remove the eligibility in PIM; deleting the assignment only ends this activation."
+        $primary = "# '$principalLiteral' has activated '$roleLiteral' through PIM. Deactivate it or remove the eligibility in PIM; deleting the assignment only ends this activation."
     }
     elseif ($AssignmentId) {
-        $primary = "Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$AssignmentId'"
+        $primary = "Invoke-MgGraphRequest -Method DELETE -Uri 'https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments/$assignmentLiteral'"
     }
     else {
-        $primary = "# Remove the assignment of '$PrincipalId' for '$RoleName' in the Entra portal: Roles and administrators > $RoleName"
+        $primary = "# Remove the assignment of '$principalLiteral' for '$roleLiteral' in the Entra portal: Roles and administrators > $roleLiteral"
     }
 
     [pscustomobject]@{ Primary = $primary; Alt = $alt }

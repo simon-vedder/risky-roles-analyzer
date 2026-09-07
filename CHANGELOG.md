@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- The cleanup commands in the report quote role, scope and principal values properly. A role named
+  with an apostrophe produced a command that does not parse, and a name crafted as
+  `x'; <command> #` would have turned the pasted line into something else. Role names come from the
+  tenant being audited and the report offers these strings with a copy button, so they are treated
+  as untrusted text now: apostrophes doubled, line breaks collapsed. `Remove-RiskyRoleAssignment`
+  was never affected, it removes by role definition id and never builds a command string.
+
 ## [0.1.0-preview] - 2026-09-07
 
 ### Added

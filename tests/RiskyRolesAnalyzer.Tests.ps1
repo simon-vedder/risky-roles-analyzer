@@ -24,6 +24,7 @@ BeforeAll {
             Principal = Get-Command Resolve-DirectoryPrincipal
             Inventory = Get-Command Get-ApplicationInventory
             Permission = Get-Command Get-RoleDefinitionPermission
+            Literal    = Get-Command ConvertTo-PowerShellLiteral
         }
     }
 
@@ -423,6 +424,28 @@ Describe 'Resolve-PrincipalActivity' {
     }
 }
 
+Describe 'ConvertTo-PowerShellLiteral' {
+    It 'doubles apostrophes so a name cannot end the quoted string' {
+        (& $Private.Literal -Value "Simon's Admin Role") | Should -Be "Simon''s Admin Role"
+    }
+    It 'neutralises a name crafted to break out of the command' {
+        $evil = "x'; Remove-AzResourceGroup -Name prod -Force #"
+        $safe = & $Private.Literal -Value $evil
+        $safe | Should -Be "x''; Remove-AzResourceGroup -Name prod -Force #"
+        # Pasted back into a single-quoted string, the whole thing is one value again.
+        $rebuilt = [scriptblock]::Create("'$safe'").Invoke()[0]
+        $rebuilt | Should -Be $evil
+    }
+    It 'collapses line breaks and tabs so a name cannot start a statement of its own' {
+        (& $Private.Literal -Value "Role`r`nRemove-Item /") | Should -Be 'Role Remove-Item /'
+        (& $Private.Literal -Value "a`tb") | Should -Be 'a b'
+    }
+    It 'passes an ordinary value through and turns null into an empty string' {
+        (& $Private.Literal -Value 'Owner') | Should -Be 'Owner'
+        (& $Private.Literal -Value $null) | Should -Be ''
+    }
+}
+
 Describe 'Get-RiskyRoleCleanupCommand' {
     It 'azure direct assignment' {
         (& $Private.Cleanup -RoleScope Azure -RoleName Owner -Scope '/subscriptions/s' -PrincipalId 'p' -AssignmentType Permanent).Primary | Should -Be "Remove-AzRoleAssignment -ObjectId 'p' -RoleDefinitionName 'Owner' -Scope '/subscriptions/s'"
@@ -437,6 +460,31 @@ Describe 'Get-RiskyRoleCleanupCommand' {
     }
     It 'entra eligible is a PIM task' {
         (& $Private.Cleanup -RoleScope Entra -RoleName 'Global Administrator' -Scope '/' -PrincipalId 'p' -AssignmentType Eligible).Primary | Should -Match '^# .*PIM'
+    }
+}
+
+Describe 'Get-RiskyRoleCleanupCommand escaping' {
+    It 'quotes a role name with an apostrophe so the command still parses' {
+        $c = & $Private.Cleanup -RoleScope Azure -RoleName "Simon's Admin Role" -Scope '/subscriptions/s1' -PrincipalId 'p1' -AssignmentType Permanent
+        $c.Primary | Should -BeLike "*-RoleDefinitionName 'Simon''s Admin Role'*"
+        { [scriptblock]::Create($c.Primary) } | Should -Not -Throw -Because 'the report offers this string with a copy button'
+    }
+    It 'keeps a hostile role name inside its quotes in every command it builds' {
+        $evil = "x'; Remove-AzResourceGroup -Name prod -Force #"
+        foreach ($params in @(
+                @{ RoleScope = 'Azure'; AssignmentType = 'Permanent' },
+                @{ RoleScope = 'Azure'; AssignmentType = 'Permanent'; ViaGroupId = 'g1' },
+                @{ RoleScope = 'Entra'; AssignmentType = 'Permanent'; AssignmentId = 'ra-1' },
+                @{ RoleScope = 'Entra'; AssignmentType = 'Eligible' },
+                @{ RoleScope = 'Entra'; AssignmentType = 'Activated' },
+                @{ RoleScope = 'Entra'; AssignmentType = 'Permanent' }
+            )) {
+            $c = & $Private.Cleanup -RoleName $evil -Scope '/' -PrincipalId 'p1' @params
+            foreach ($command in @($c.Primary, $c.Alt | Where-Object { $_ })) {
+                $command | Should -Not -Match "[^']'; Remove-AzResourceGroup" -Because 'the apostrophe must stay escaped'
+                if (-not $command.StartsWith('#')) { { [scriptblock]::Create($command) } | Should -Not -Throw }
+            }
+        }
     }
 }
 
