@@ -13,4 +13,12 @@
 7. The Gallery API key is scoped to this package and expires after a year; rotate it in the
    repository secret `PSGALLERY_API_KEY` before then. Note the expiry date here: `<date>`.
 
+The repository has to be public before the first publish. `ProjectUri` and `LicenseUri` in the
+manifest point at it, and a Gallery page whose links 404 reads as abandoned. Check that the history
+carries no tenant, subscription or user identifiers before flipping it:
+
+```powershell
+git rev-list --all | ForEach-Object { git grep -lniE '<your tenant id>|<your domain>' $_ }
+```
+
 What never goes into a release: lab resource ids, subscription or tenant ids, SAS URLs, credentials.
