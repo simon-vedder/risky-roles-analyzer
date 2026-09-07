@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-preview] - 2026-09-07
+
 ### Added
 - Module `RiskyRolesAnalyzer` (PowerShell 7.2+), rebuilt from the `RiskyRolesAnalyzer.ps1` script:
   `Connect-RiskyRolesAnalyzer`, `Get-RiskyRoleAssignment`, `Remove-RiskyRoleAssignment`.
@@ -71,3 +73,6 @@ All notable changes to this project are documented here. The format follows
 - `Show-RiskyRoleAssignment` driven against real findings with the grid substituted: the columns the
   grid is handed, the title and the multiple-selection mode, the originals coming back for the picked
   rows, an empty selection returning nothing. The three that need no tenant are Pester tests now.
+
+[Unreleased]: https://github.com/simon-vedder/risky-roles-analyzer/compare/v0.1.0...HEAD
+[0.1.0-preview]: https://github.com/simon-vedder/risky-roles-analyzer/releases/tag/v0.1.0
