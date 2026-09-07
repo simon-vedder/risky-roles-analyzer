@@ -63,4 +63,8 @@ All notable changes to this project are documented here. The format follows
   assignable only in a throwaway resource group, assigned to a security group with the test user
   as member and directly to the user, user disabled for the audit; the inherited finding was
   refused by `Remove-`, the other two removed and restored from the backup, then everything
-  deleted (`tests/manual/real-tenant-group-custom-role.ps1`). Details in docs/verification.md.
+  deleted (`tests/manual/real-tenant-group-custom-role.ps1`).
+- PIM activation detection on the same tenant, with a harmless role instead of a privileged one: a
+  Directory Readers eligibility activated for an hour was typed `Activated` and protected, scored
+  above its own eligibility, was not mistaken for a permanent assignment, and `Remove- -WhatIf`
+  refused both (`tests/manual/real-tenant-pim-activation.ps1`). Details in docs/verification.md.

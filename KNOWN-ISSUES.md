@@ -5,11 +5,13 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
 
 ## Behaviour
 
-- *(to verify)* An **activated PIM assignment** appears in `roleManagement/directory/roleAssignments`
+- *(observed)* An **activated PIM assignment** appears in `roleManagement/directory/roleAssignments`
   like a permanent one. The module reads `roleAssignmentSchedules` and types the ones it reports as
-  `Activated`, which are protected. Whether every activation shows up there with the same
-  `directoryScopeId` as in `roleAssignments` is on the lab list; until then an activation the
-  schedules miss reads as `Permanent`, and removing it would end the activation, not the eligibility.
+  `Activated`, which are protected. Verified on a real tenant with a directory-scoped activation
+  (`tests/manual/real-tenant-pim-activation.ps1`): the activation was typed `Activated`, not
+  `Permanent`, and `Remove-` refused it. *(to verify)* Activations scoped to an administrative unit
+  rather than the whole directory; an activation the schedules miss would read as `Permanent`, and
+  removing it would end the activation, not the eligibility.
 - *(Microsoft)* The app registration **Deactivated** toggle (`isDisabled`) is only exposed on the
   Graph `/beta` endpoint. When that call fails the module warns and treats those apps as active.
 - *(Microsoft)* **PIM eligible** assignments (`roleEligibilitySchedules`) need Entra ID P2. Without
@@ -41,6 +43,9 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
   `Get-AzAccessToken -ResourceTypeName MSGraph`) reads role assignments, users and groups but gets
   403 on the PIM schedule endpoints, so eligibility and activations are missing. Use
   `Connect-RiskyRolesAnalyzer` for a full audit.
+- *(observed)* PIM refuses `selfDeactivate` in the first minutes after an activation, and it refuses
+  `adminRemove` on an eligibility while an assignment derived from it is still active. Anything that
+  activates a role for a test has to wait, deactivate, then remove the eligibility, in that order.
 - *(observed)* Az.Resources 10 moved the actions of a role definition into `Permissions[]`; the
   module reads both that and the flattened properties of older versions. Other tooling that reads
   `$definition.Actions` stops seeing custom role permissions on Az.Resources 10.
