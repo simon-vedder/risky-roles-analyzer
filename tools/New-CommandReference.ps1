@@ -13,6 +13,10 @@ Writes one page per exported command plus an index with the module-wide requirem
 Generate into a temporary folder and compare against docs/commands. Exits non-zero on a difference
 instead of writing anything.
 
+.PARAMETER SiteContentPath
+Also write the same content as pages for simonvedder.com/tools, into
+<path>/<repo name>/. Same source, different wrapper.
+
 .EXAMPLE
 ./tools/New-CommandReference.ps1
 
@@ -22,7 +26,13 @@ instead of writing anything.
 [CmdletBinding()]
 param(
     [Parameter()]
-    [switch]$Check
+    [switch]$Check,
+
+    # Also write the pages in the shape simonvedder.com/tools expects: frontmatter with tool,
+    # command, synopsis and order, and no heading of their own. Point it at the tools site's
+    # src/content/commands folder.
+    [Parameter()]
+    [string]$SiteContentPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,6 +69,7 @@ function Format-Cell {
 }
 
 $pages = @{}
+$sitePages = @{}
 
 # The audit script is the primary entry point, so it gets a page from its own help just like the
 # commands do. Get-Help on a .ps1 returns the same shape as for a function.
@@ -68,7 +79,10 @@ if (Test-Path -Path $scriptPath) { $documented = @(Get-Item -Path $scriptPath) +
 
 foreach ($command in $documented) {
     $isScript = $command -is [System.IO.FileInfo]
-    $name = if ($isScript) { $command.BaseName } else { $command.Name }
+    # A script is called by its file name, so that is what the page shows; the file it is written
+    # to drops the extension, because Invoke-Thing.ps1.md reads like a mistake.
+    $name = if ($isScript) { $command.Name } else { $command.Name }
+    $fileKey = if ($isScript) { $command.BaseName } else { $command.Name }
     $target = if ($isScript) { $command.FullName } else { $command.Name }
     $help = Get-Help -Name $target -Full
     $lines = [System.Collections.Generic.List[string]]::new()
@@ -167,7 +181,25 @@ foreach ($command in $documented) {
     $lines.Add('')
     $lines.Add('*Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*')
 
-    $pages["$name.md"] = ($lines -join "`n").TrimEnd() + "`n"
+    $pages["$fileKey.md"] = ($lines -join "`n").TrimEnd() + "`n"
+
+    # The site template supplies the heading and the navigation, so its page is the same content
+    # from '## Syntax' down, with the synopsis moved into frontmatter.
+    $body = [System.Collections.Generic.List[string]]::new()
+    if ($description) { $body.Add($description); $body.Add('') }
+    $started = $false
+    foreach ($line in $lines) {
+        if ($line -eq '## Syntax') { $started = $true }
+        if (-not $started) { continue }
+        if ($line -eq '---') { break }
+        $body.Add(($line -replace '^## Requirements and notes$', '## Requirements'))
+    }
+    $sitePages[$fileKey] = [pscustomobject]@{
+        Command  = $name
+        Synopsis = $synopsis
+        Order    = if ($isScript) { 1 } else { 10 + ([array]::IndexOf(@($commands.Name), $fileKey) * 5) }
+        Body     = ($body -join "`n").TrimEnd() + "`n"
+    }
 }
 
 # ---- index -------------------------------------------------------------------------------------
@@ -235,6 +267,28 @@ if ($Check) {
     }
     "The command reference matches the help of $($commands.Count) command(s)."
     return
+}
+
+if ($SiteContentPath) {
+    $repoName = Split-Path -Path $repoRoot -Leaf
+    $siteTarget = Join-Path $SiteContentPath $repoName
+    $null = New-Item -ItemType Directory -Path $siteTarget -Force
+    foreach ($file in @(Get-ChildItem -Path $siteTarget -Filter '*.md' -ErrorAction SilentlyContinue)) { Remove-Item -Path $file.FullName -Force }
+    foreach ($key in ($sitePages.Keys | Sort-Object { $sitePages[$_].Order })) {
+        $page = $sitePages[$key]
+        $front = @(
+            '---'
+            "tool: $repoName"
+            "command: $($page.Command)"
+            "synopsis: `"$($page.Synopsis -replace '"', '\"')`""
+            "order: $($page.Order)"
+            '---'
+            ''
+        ) -join "`n"
+        $fileName = ($page.Command -replace '\.ps1$', '').ToLowerInvariant() + '.md'
+        Set-Content -Path (Join-Path $siteTarget $fileName) -Value ($front + $page.Body) -Encoding utf8 -NoNewline
+    }
+    "Wrote $($sitePages.Count) page(s) to $siteTarget"
 }
 
 $null = New-Item -ItemType Directory -Path $target -Force

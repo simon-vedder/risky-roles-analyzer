@@ -1,4 +1,4 @@
-# Invoke-RiskyRolesAudit
+# Invoke-RiskyRolesAudit.ps1
 
 > Every privileged Azure RBAC and Entra ID role assignment in your tenant, scored, in one HTML report.
 
