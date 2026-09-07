@@ -6,18 +6,23 @@
 3. Run locally: `Invoke-ScriptAnalyzer -Path ./src -Recurse -Settings ./PSScriptAnalyzerSettings.psd1`
    and `Invoke-Pester ./tests`. Both clean.
 4. Commit on a branch, open the PR, merge to `main`.
-5. Tag: `git tag v0.1.0 && git push origin v0.1.0`. The release workflow refuses a tag that does
-   not match the manifest version, runs the analyzer and the tests, publishes to the PowerShell
-   Gallery with the `PSGALLERY_API_KEY` secret and attaches the module zip to the GitHub release.
-6. Check the Gallery listing (`Find-Module RiskyRolesAnalyzer -AllowPrerelease`) and the GitHub release.
-7. The Gallery API key is scoped to this package (glob `RiskyRolesAnalyzer`, scope "Push new packages
-   and package versions") and expires after a year. Created 2026-09-07, **expires 2027-09-07**. Rotate
-   it in the repository secret `PSGALLERY_API_KEY` before then; the release workflow fails on the next
-   tag without it. A reminder for 2027-08-17 sits in Apple Reminders.
+5. Rebuild the standalone script and commit it: `./tools/Build-StandaloneScript.ps1`. The release
+   workflow refuses a tag whose `dist/Invoke-RiskyRolesAudit.ps1` does not match the sources.
+6. Tag: `git tag v0.1.0 && git push origin v0.1.0`. The release workflow refuses a tag that does
+   not match the manifest version, runs the analyzer and the tests, and attaches the standalone
+   script and the module sources to a GitHub release.
+7. Check the GitHub release, then download the attached script into a scratch folder and run it
+   once against a tenant. The release is the first thing a stranger sees; a broken one is worse
+   than a late one.
 
-The repository has to be public before the first publish. `ProjectUri` and `LicenseUri` in the
-manifest point at it, and a Gallery page whose links 404 reads as abandoned. Check that the history
-carries no tenant, subscription or user identifiers before flipping it:
+Nothing is published to the PowerShell Gallery. The tool ships as one file that people download
+from `main`, which is the URL every page and every post points at, so a release is a marker and an
+archive rather than a distribution channel. See
+`decisions/0003-the-report-is-a-script-the-module-is-optional.md`. `0.1.0-preview` is unlisted on
+the Gallery; if it is ever delisted for good, nothing in this repository has to change.
+
+The repository is public, so the history is public with it. Before any release, check that it
+carries no tenant, subscription or user identifiers:
 
 ```powershell
 git rev-list --all | ForEach-Object { git grep -lniE '<your tenant id>|<your domain>' $_ }

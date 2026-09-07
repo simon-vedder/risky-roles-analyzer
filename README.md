@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="https://github.com/simon-vedder/risky-roles-analyzer/actions/workflows/ci.yml"><img src="https://github.com/simon-vedder/risky-roles-analyzer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://www.powershellgallery.com/packages/RiskyRolesAnalyzer"><img src="https://img.shields.io/powershellgallery/v/RiskyRolesAnalyzer?include_prereleases&label=PowerShell%20Gallery" alt="PowerShell Gallery"></a>
   <img src="https://img.shields.io/badge/PowerShell-7.2%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 7.2+">
   <img src="https://img.shields.io/badge/access-read--only%20by%20default-16a34a" alt="Read-only by default">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
