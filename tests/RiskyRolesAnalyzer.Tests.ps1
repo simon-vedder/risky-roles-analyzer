@@ -147,6 +147,14 @@ BeforeAll {
         end { $rows | Select-Object -First 2 }
     }
 
+    function Select-NothingAndRecord {
+        # Stand-in for Out-ConsoleGridView that records what it was handed and picks nothing.
+        param([Parameter(ValueFromPipeline)]$InputObject, [string]$Title, [string]$OutputMode)
+        begin { $rows = [System.Collections.Generic.List[object]]::new() }
+        process { $rows.Add($InputObject) }
+        end { $script:GridRows = $rows.ToArray(); $script:GridTitle = $Title; $script:GridMode = $OutputMode }
+    }
+
     $script:GraphCalls = [System.Collections.Generic.List[object]]::new()
     $script:FailEligibility = $false
 
@@ -812,6 +820,28 @@ Describe 'Show-RiskyRoleAssignment' {
     }
     It 'returns nothing for no input' {
         @($null | Show-RiskyRoleAssignment -ErrorAction SilentlyContinue).Count | Should -Be 0
+    }
+    It 'hands the grid the decision columns, not the whole finding' {
+        Mock -ModuleName RiskyRolesAnalyzer Get-RiskyRoleGridCommand { Get-Command Select-NothingAndRecord }
+        $null = @((New-Finding), (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-2' }) })) | Show-RiskyRoleAssignment
+        $script:GridRows.Count | Should -Be 2 -Because 'every finding reaches the grid, protected ones included'
+        $columns = @($script:GridRows[0].PSObject.Properties.Name)
+        $columns | Should -Contain 'RiskScore'
+        $columns | Should -Contain 'Protected'
+        $columns | Should -Contain 'ScopeDetail'
+        $columns | Should -Not -Contain 'Source' -Because 'the raw API object has no place in a picker'
+        $columns | Should -Not -Contain 'CleanupPrimary'
+    }
+    It 'passes the title through and asks the grid for a multiple selection' {
+        Mock -ModuleName RiskyRolesAnalyzer Get-RiskyRoleGridCommand { Get-Command Select-NothingAndRecord }
+        $null = New-Finding | Show-RiskyRoleAssignment -Title 'Contoso: pick the ones to remove'
+        $script:GridTitle | Should -Be 'Contoso: pick the ones to remove'
+        $script:GridMode | Should -Be 'Multiple'
+    }
+    It 'returns nothing when the grid is closed without a selection' {
+        Mock -ModuleName RiskyRolesAnalyzer Get-RiskyRoleGridCommand { Get-Command Select-NothingAndRecord }
+        $picked = @(@((New-Finding), (New-Finding @{ Principal = (New-Principal @{ ObjectId = 'p-2' }) })) | Show-RiskyRoleAssignment)
+        $picked.Count | Should -Be 0 -Because 'an empty selection must not fall back to everything'
     }
 }
 

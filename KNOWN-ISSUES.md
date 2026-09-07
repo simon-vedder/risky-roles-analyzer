@@ -43,6 +43,20 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
   `Get-AzAccessToken -ResourceTypeName MSGraph`) reads role assignments, users and groups but gets
   403 on the PIM schedule endpoints, so eligibility and activations are missing. Use
   `Connect-RiskyRolesAnalyzer` for a full audit.
+- *(observed)* A **saved audit cannot be piped back in**. `Export-Clixml` and `Import-Clixml` round
+  trip the data, but PowerShell renames the type to `Deserialized.RiskyRolesAnalyzer.RiskyRoleAssignment`,
+  and `Remove-`, `Show-` and `Export-RiskyRoleReport` take typed input only, so they refuse it with a
+  parameter binding error. `Restore-RiskyRoleAssignment` is unaffected: it reads the JSON backup and
+  takes untyped input by design. Re-run `Get-RiskyRoleAssignment`, or put the type back:
+
+  ```powershell
+  $findings = @(Import-Clixml ./findings.xml | ForEach-Object {
+      $copy = $_ | Select-Object -Property *
+      $copy.PSObject.TypeNames.Insert(0, 'RiskyRolesAnalyzer.RiskyRoleAssignment')
+      $copy
+  })
+  ```
+
 - *(observed)* PIM refuses `selfDeactivate` in the first minutes after an activation, and it refuses
   `adminRemove` on an eligibility while an assignment derived from it is still active. Anything that
   activates a role for a test has to wait, deactivate, then remove the eligibility, in that order.

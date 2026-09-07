@@ -50,7 +50,7 @@ All notable changes to this project are documented here. The format follows
 ### Verified
 - Synthetic tenant fixture (two subscriptions, one inherited management group assignment, nested
   groups with a cycle, custom Azure and Entra roles, dormant and deactivated app registrations,
-  disabled user, PIM eligibility and activation): 135 Pester tests, PSScriptAnalyzer clean. Sample
+  disabled user, PIM eligibility and activation): 138 Pester tests, PSScriptAnalyzer clean. Sample
   report rendered in headless Chrome from synthetic findings.
 - The report's interactive parts driven in headless Chrome over the DevTools protocol: filters,
   search, sorting, selection, removal command popup, clipboard copy, cleanup popups, accept and
@@ -68,3 +68,6 @@ All notable changes to this project are documented here. The format follows
   Directory Readers eligibility activated for an hour was typed `Activated` and protected, scored
   above its own eligibility, was not mistaken for a permanent assignment, and `Remove- -WhatIf`
   refused both (`tests/manual/real-tenant-pim-activation.ps1`). Details in docs/verification.md.
+- `Show-RiskyRoleAssignment` driven against real findings with the grid substituted: the columns the
+  grid is handed, the title and the multiple-selection mode, the originals coming back for the picked
+  rows, an empty selection returning nothing. The three that need no tenant are Pester tests now.
