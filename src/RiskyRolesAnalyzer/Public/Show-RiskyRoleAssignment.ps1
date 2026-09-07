@@ -23,6 +23,13 @@ function Show-RiskyRoleAssignment {
 
     .OUTPUTS
     RiskyRolesAnalyzer.RiskyRoleAssignment
+
+    .NOTES
+    Required permissions: none. It filters objects you already have.
+
+    Needs a grid view and an interactive terminal: Out-ConsoleGridView from
+    Microsoft.PowerShell.ConsoleGuiTools on any platform, or Out-GridView on Windows. Without one it
+    throws and says what to install. Selecting nothing returns nothing rather than everything.
     #>
     [CmdletBinding()]
     [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignment')]
