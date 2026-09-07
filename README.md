@@ -124,8 +124,8 @@ on the Azure scope, which Owner and User Access Administrator have.
 ## Status
 
 Pre-release `0.1.0-preview`. What is verified is in [docs/verification.md](docs/verification.md);
-what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). Read path, removal and restore have each run
-once on a real tenant.
+what is not is in [KNOWN-ISSUES.md](KNOWN-ISSUES.md). Read path, removal and restore have run on a
+real tenant, including a group-inherited assignment, a custom role and a disabled user.
 
 ## Documentation
 

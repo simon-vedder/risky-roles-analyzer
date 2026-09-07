@@ -23,6 +23,7 @@ BeforeAll {
             Members   = Get-Command Get-GroupMemberRecursive
             Principal = Get-Command Resolve-DirectoryPrincipal
             Inventory = Get-Command Get-ApplicationInventory
+            Permission = Get-Command Get-RoleDefinitionPermission
         }
     }
 
@@ -90,7 +91,8 @@ BeforeAll {
             [pscustomobject]@{ Id = 'sub-3'; Name = 'Old'; State = 'Disabled'; TenantId = 'tenant-1' }
         )
         CustomRoles = @(
-            [pscustomobject]@{ Id = 'aaaaaaaa-1111-2222-3333-444444444444'; Name = 'Custom Automation Role'; Actions = @('Microsoft.Authorization/*', 'Microsoft.Compute/*/read'); NotActions = @('Microsoft.Authorization/*/delete'); DataActions = @(); NotDataActions = @() }
+            # Az.Resources 10 shape: the actions live in Permissions[]; the Harmless Reader below keeps the older flattened shape.
+            [pscustomobject]@{ Id = 'aaaaaaaa-1111-2222-3333-444444444444'; Name = 'Custom Automation Role'; Permissions = @([pscustomobject]@{ Actions = @('Microsoft.Authorization/*', 'Microsoft.Compute/*/read'); NotActions = @('Microsoft.Authorization/*/delete'); DataActions = @(); NotDataActions = @(); Condition = $null; ConditionVersion = $null }) }
             [pscustomobject]@{ Id = 'bbbbbbbb-1111-2222-3333-444444444444'; Name = 'Harmless Reader'; Actions = @('*/read'); NotActions = @(); DataActions = @(); NotDataActions = @() }
         )
         AzureAssignments = @{
@@ -257,6 +259,37 @@ Describe 'Get-RiskyRoleAction' {
     }
     It 'tolerates null lists' {
         @(& $Private.Action -Action $null -NotAction $null -RiskyAction $risky).Count | Should -Be 0
+    }
+}
+
+Describe 'Get-RoleDefinitionPermission' {
+    It 'reads the Permissions blocks of an Az.Resources 10 role definition' {
+        $definition = [pscustomobject]@{
+            Id = 'r1'; Name = 'Two blocks'
+            Permissions = @(
+                [pscustomobject]@{ Actions = @('Microsoft.Compute/*'); NotActions = @('Microsoft.Compute/*/delete'); DataActions = @(); NotDataActions = @(); Condition = $null; ConditionVersion = $null }
+                [pscustomobject]@{ Actions = @(); NotActions = @(); DataActions = @('Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read'); NotDataActions = @(); Condition = '@Resource[...]'; ConditionVersion = '2.0' }
+            )
+        }
+        $blocks = @(& $Private.Permission -Definition $definition)
+        $blocks.Count | Should -Be 2
+        $blocks[0].Actions | Should -Be @('Microsoft.Compute/*')
+        $blocks[0].NotActions | Should -Be @('Microsoft.Compute/*/delete')
+        $blocks[1].DataActions | Should -Be @('Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read')
+        @($blocks[1].Actions).Count | Should -Be 0
+    }
+    It 'falls back to the flattened properties of older Az.Resources versions' {
+        $definition = [pscustomobject]@{ Id = 'r2'; Name = 'Flat'; Actions = @('*'); NotActions = @('Microsoft.Authorization/*/write'); DataActions = $null; NotDataActions = @() }
+        $blocks = @(& $Private.Permission -Definition $definition)
+        $blocks.Count | Should -Be 1
+        $blocks[0].Actions | Should -Be @('*')
+        $blocks[0].NotActions | Should -Be @('Microsoft.Authorization/*/write')
+        @($blocks[0].DataActions).Count | Should -Be 0
+    }
+    It 'returns one empty block for a definition without any actions' {
+        $blocks = @(& $Private.Permission -Definition ([pscustomobject]@{ Id = 'r3'; Name = 'Empty' }))
+        $blocks.Count | Should -Be 1
+        @($blocks[0].Actions).Count | Should -Be 0
     }
 }
 

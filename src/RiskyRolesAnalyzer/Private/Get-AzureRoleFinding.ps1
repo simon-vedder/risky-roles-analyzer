@@ -53,10 +53,14 @@ function Get-AzureRoleFinding {
             try {
                 foreach ($definition in @(Get-AzRoleDefinition -Custom -ErrorAction Stop)) {
                     if ($roleCache.ContainsKey($definition.Id)) { continue }
-                    $roleCache[$definition.Id] = @{
-                        Name  = $definition.Name
-                        Risky = @(Get-RiskyRoleAction -Action $definition.Actions -NotAction $definition.NotActions -DataAction $definition.DataActions -NotDataAction $definition.NotDataActions -RiskyAction $Audit.RiskyAzureActions)
+                    # Az.Resources 10 nests the actions in Permissions[]; older versions flatten them. Rate the union.
+                    $risky = [System.Collections.Generic.List[string]]::new()
+                    foreach ($permission in @(Get-RoleDefinitionPermission -Definition $definition)) {
+                        foreach ($action in @(Get-RiskyRoleAction -Action $permission.Actions -NotAction $permission.NotActions -DataAction $permission.DataActions -NotDataAction $permission.NotDataActions -RiskyAction $Audit.RiskyAzureActions)) {
+                            if ($action -notin $risky) { $risky.Add($action) }
+                        }
                     }
+                    $roleCache[$definition.Id] = @{ Name = $definition.Name; Risky = $risky.ToArray() }
                 }
             }
             catch { Write-Warning "Could not list role definitions in $($subscription.Name): $($_.Exception.Message)" }

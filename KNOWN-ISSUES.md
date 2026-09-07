@@ -34,5 +34,13 @@ Every entry says where it comes from: *(observed)* in this project's lab or a re
 - *(observed)* `Out-ConsoleGridView` is not a dependency; `Show-RiskyRoleAssignment` explains what
   to install when no grid is available (`Microsoft.PowerShell.ConsoleGuiTools` on macOS, Linux or
   Windows; `Out-GridView` ships with PowerShell on Windows).
-- *(to verify)* The report's **Copy** buttons use the browser clipboard API, which some browsers
-  refuse for `file://` pages. The command is always shown in full, so select-and-copy works regardless.
+- *(observed)* The report's **Copy** buttons write to the clipboard when the page is served over
+  `http` (checked in Chrome); *(to verify)* some browsers refuse the clipboard API for `file://`
+  pages. The command is always shown in full, so select-and-copy works regardless.
+- *(observed)* A Graph session built from an Az token (`Connect-MgGraph -AccessToken` with
+  `Get-AzAccessToken -ResourceTypeName MSGraph`) reads role assignments, users and groups but gets
+  403 on the PIM schedule endpoints, so eligibility and activations are missing. Use
+  `Connect-RiskyRolesAnalyzer` for a full audit.
+- *(observed)* Az.Resources 10 moved the actions of a role definition into `Permissions[]`; the
+  module reads both that and the flattened properties of older versions. Other tooling that reads
+  `$definition.Actions` stops seeing custom role permissions on Az.Resources 10.

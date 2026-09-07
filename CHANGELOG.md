@@ -42,13 +42,25 @@ All notable changes to this project are documented here. The format follows
   account (break-glass, emergency access, bg1) and `-BreakGlassAccount` was not passed for it.
 - The report shows the organisation display name next to the tenant id when Graph lets it read one.
 
+### Fixed
+- Custom Azure roles are read from `Permissions[]`, the shape Az.Resources 10 returns, as well as
+  from the flattened `Actions` properties of older versions. With Az.Resources 10 the module warned
+  "Could not list role definitions" and rated every custom role as harmless.
+
 ### Verified
 - Synthetic tenant fixture (two subscriptions, one inherited management group assignment, nested
   groups with a cycle, custom Azure and Entra roles, dormant and deactivated app registrations,
-  disabled user, PIM eligibility and activation): 130 Pester tests, PSScriptAnalyzer clean. Sample
+  disabled user, PIM eligibility and activation): 135 Pester tests, PSScriptAnalyzer clean. Sample
   report rendered in headless Chrome from synthetic findings.
+- The report's interactive parts driven in headless Chrome over the DevTools protocol: filters,
+  search, sorting, selection, removal command popup, clipboard copy, cleanup popups, accept and
+  hide, CSV export, narrow viewport; 42 checks (`tests/manual/report-ui.py`).
 - Read path on a real tenant (own, Entra ID P2): 8 findings in 56 seconds, report opened, no
   unresolved principals.
 - Write path on the same tenant with a test user: Reader on a throwaway resource group and Directory
   Readers, removed with backup, verified gone, restored from the file, verified back, cleaned up.
-  Details in docs/verification.md.
+- Group expansion, custom role rating and disabled-user scoring on the same tenant: a custom role
+  assignable only in a throwaway resource group, assigned to a security group with the test user
+  as member and directly to the user, user disabled for the audit; the inherited finding was
+  refused by `Remove-`, the other two removed and restored from the backup, then everything
+  deleted (`tests/manual/real-tenant-group-custom-role.ps1`). Details in docs/verification.md.
