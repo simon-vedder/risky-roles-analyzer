@@ -17,11 +17,19 @@ instead of writing anything.
 Also write the same content as pages for simonvedder.com/tools, into
 <path>/<repo name>/. Same source, different wrapper.
 
+.PARAMETER SiteInclude
+Which pages the site publishes, by name. Without it, all of them.
+
 .EXAMPLE
 ./tools/New-CommandReference.ps1
 
 .EXAMPLE
 ./tools/New-CommandReference.ps1 -Check
+
+.EXAMPLE
+# Regenerate everything, and publish only the script to the tools site. The module commands are
+# documented in this repository, where the module lives; the site documents what the tool offers.
+./tools/New-CommandReference.ps1 -SiteContentPath ../simonvedder-tools/src/content/commands -SiteInclude Invoke-RiskyRolesAudit
 #>
 [CmdletBinding()]
 param(
@@ -32,7 +40,13 @@ param(
     # command, synopsis and order, and no heading of their own. Point it at the tools site's
     # src/content/commands folder.
     [Parameter()]
-    [string]$SiteContentPath
+    [string]$SiteContentPath,
+
+    # Which of them the site publishes. The site documents what the tool offers, and this tool
+    # offers a script; the module lives in the repository and is documented in docs/commands.
+    # Without it, everything is published.
+    [Parameter()]
+    [string[]]$SiteInclude
 )
 
 $ErrorActionPreference = 'Stop'
@@ -244,7 +258,7 @@ if (Test-Path -Path $scriptPath) {
 
 $index.Add('## Module commands')
 $index.Add('')
-$index.Add('For acting on the findings rather than reading them. Clone the repository and import the module.')
+$index.Add('For acting on the findings rather than reading them. The module is not published anywhere: it lives in this repository, so its commands are documented here rather than on the tool page.')
 $index.Add('')
 $index.Add('| Command | What it does |')
 $index.Add('|---|---|')
@@ -285,7 +299,10 @@ if ($SiteContentPath) {
     $siteTarget = Join-Path $SiteContentPath $repoName
     $null = New-Item -ItemType Directory -Path $siteTarget -Force
     foreach ($file in @(Get-ChildItem -Path $siteTarget -Filter '*.md' -ErrorAction SilentlyContinue)) { Remove-Item -Path $file.FullName -Force }
-    foreach ($key in ($sitePages.Keys | Sort-Object { $sitePages[$_].Order })) {
+    $publish = @($sitePages.Keys | Where-Object { -not $SiteInclude -or $_ -in $SiteInclude } | Sort-Object { $sitePages[$_].Order })
+    if (-not $publish.Count) { throw "-SiteInclude matched none of: $(($sitePages.Keys | Sort-Object) -join ', ')" }
+    $needsGroups = @($publish | ForEach-Object { $sitePages[$_].Group } | Sort-Object -Unique).Count -gt 1
+    foreach ($key in $publish) {
         $page = $sitePages[$key]
         $front = @(
             '---'
@@ -293,15 +310,15 @@ if ($SiteContentPath) {
             "command: $($page.Command)"
             "synopsis: `"$($page.Synopsis -replace '"', '\"')`""
             "order: $($page.Order)"
-            "group: `"$($page.Group)`""
-            "groupNote: `"$($page.GroupNote)`""
+            if ($needsGroups) { "group: `"$($page.Group)`"" }
+            if ($needsGroups) { "groupNote: `"$($page.GroupNote)`"" }
             '---'
             ''
         ) -join "`n"
         $fileName = ($page.Command -replace '\.ps1$', '').ToLowerInvariant() + '.md'
         Set-Content -Path (Join-Path $siteTarget $fileName) -Value ($front + $page.Body) -Encoding utf8 -NoNewline
     }
-    "Wrote $($sitePages.Count) page(s) to $siteTarget"
+    "Wrote $($publish.Count) page(s) to $siteTarget"
 }
 
 $null = New-Item -ItemType Directory -Path $target -Force
