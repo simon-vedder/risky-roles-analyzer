@@ -10,8 +10,10 @@
    not match the manifest version, runs the analyzer and the tests, publishes to the PowerShell
    Gallery with the `PSGALLERY_API_KEY` secret and attaches the module zip to the GitHub release.
 6. Check the Gallery listing (`Find-Module RiskyRolesAnalyzer -AllowPrerelease`) and the GitHub release.
-7. The Gallery API key is scoped to this package and expires after a year; rotate it in the
-   repository secret `PSGALLERY_API_KEY` before then. Note the expiry date here: `<date>`.
+7. The Gallery API key is scoped to this package (glob `RiskyRolesAnalyzer`, scope "Push new packages
+   and package versions") and expires after a year. Created 2026-09-07, **expires 2027-09-07**. Rotate
+   it in the repository secret `PSGALLERY_API_KEY` before then; the release workflow fails on the next
+   tag without it. A reminder for 2027-08-17 sits in Apple Reminders.
 
 The repository has to be public before the first publish. `ProjectUri` and `LicenseUri` in the
 manifest point at it, and a Gallery page whose links 404 reads as abandoned. Check that the history
