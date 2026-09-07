@@ -48,6 +48,6 @@ $picked = $findings | Show-RiskyRoleAssignment -Title 'Contoso: assignments to r
 
 ---
 
-[All commands](README.md) · [Module README](../../README.md)
+[All commands](README.md) | [Module README](../../README.md)
 
 *Generated from the comment-based help by `tools/New-CommandReference.ps1`. Edit the help in the function, not this file.*

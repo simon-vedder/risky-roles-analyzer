@@ -51,10 +51,10 @@ jobs:
           $config.Run.Exit = $true
           Invoke-Pester -Configuration $config
 
-      - name: Package the module for the GitHub release
+      - name: Package the module and the standalone script for the GitHub release
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path ./dist | Out-Null
+          ./tools/Build-StandaloneScript.ps1 -Check
           Compress-Archive -Path ./src/RiskyRolesAnalyzer/* -DestinationPath ./dist/RiskyRolesAnalyzer.zip
 
       - name: Publish to the PowerShell Gallery

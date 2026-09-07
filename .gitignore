@@ -1,7 +1,12 @@
 .DS_Store
 TestResults.xml
 *.nupkg
+# Build output, except the audit script: that one is a committed artifact, because the README and
+# the release both point at it and CI checks it against the module sources.
 dist/
+!dist/
+dist/*
+!dist/Invoke-RiskyRolesAudit.ps1
 *-backup-*.json
 deploy/**/*.local.*
 deploy/**/*.bicepparam

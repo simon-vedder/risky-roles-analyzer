@@ -1035,3 +1035,78 @@ Describe 'Remove-RiskyRoleAssignment' {
         { [pscustomobject]@{ Name = 'raw' } | Remove-RiskyRoleAssignment -WhatIf -ErrorAction Stop } | Should -Throw
     }
 }
+
+Describe 'Standalone audit script' {
+    BeforeAll {
+        $script:StandalonePath = Join-Path $PSScriptRoot '..' 'dist' 'Invoke-RiskyRolesAudit.ps1'
+        $script:StandaloneText = if (Test-Path $script:StandalonePath) { Get-Content -Path $script:StandalonePath -Raw } else { '' }
+
+        # Everything above the Main banner is definitions. Dot-sourcing that half proves the bundle
+        # is complete and self-contained without a sign-in and without running the audit.
+        if ($script:StandaloneText) {
+            $marker = '#  Main'
+            $cut = $script:StandaloneText.IndexOf($marker)
+            $definitions = $script:StandaloneText.Substring(0, $cut)
+            # Drop the param block; a dot-sourced file with [CmdletBinding()] would bind arguments.
+            $definitions = $definitions -replace '(?s)^.*?Set-StrictMode -Version Latest', 'Set-StrictMode -Version Latest'
+            $script:DefinitionsPath = Join-Path $TestDrive 'standalone-definitions.ps1'
+            Set-Content -Path $script:DefinitionsPath -Value $definitions -Encoding utf8
+        }
+    }
+
+    It 'is committed and current with the module sources' {
+        Test-Path -Path $script:StandalonePath | Should -BeTrue -Because 'the script is what most people run'
+        { & (Join-Path $PSScriptRoot '..' 'tools' 'Build-StandaloneScript.ps1') -Check } | Should -Not -Throw
+    }
+
+    It 'parses' {
+        $errors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile($script:StandalonePath, [ref]$null, [ref]$errors)
+        @($errors).Count | Should -Be 0
+    }
+
+    It 'carries the catalog and the report template inline, and reads nothing from disk' {
+        $script:StandaloneText | Should -Match 'PrivilegedAzureRoles'
+        $script:StandaloneText | Should -Match '__DATA__'
+        $script:StandaloneText | Should -Not -Match "Join-Path \`$script:ModuleRoot" -Because 'there is no module folder to read from'
+    }
+
+    It 'defines every function the read path needs and none of the write path' {
+        $definitions = [scriptblock]::Create((Get-Content -Path $script:DefinitionsPath -Raw))
+        $sandbox = [powershell]::Create()
+        try {
+            $null = $sandbox.AddScript((Get-Content -Path $script:DefinitionsPath -Raw)).Invoke()
+            $sandbox.Streams.Error.Count | Should -Be 0 -Because 'the definitions must load on their own'
+            $names = @($sandbox.AddScript('Get-Command -CommandType Function | ForEach-Object Name').Invoke())
+            foreach ($needed in 'Connect-RiskyRolesAnalyzer', 'Get-RiskyRoleAssignment', 'Export-RiskyRoleReport', 'Get-RiskyRoleScore', 'Resolve-RiskyRoleAssignmentFinding', 'Get-RiskyRoleReportTemplate') {
+                $names | Should -Contain $needed
+            }
+            foreach ($excluded in 'Remove-RiskyRoleAssignment', 'Restore-RiskyRoleAssignment', 'Show-RiskyRoleAssignment') {
+                $names | Should -Not -Contain $excluded -Because 'the write path belongs in the module, where input is typed and backed up'
+            }
+        }
+        finally { $sandbox.Dispose() }
+        $definitions | Should -Not -BeNullOrEmpty
+    }
+
+    It 'renders a report from the inlined template' {
+        $sandbox = [powershell]::Create()
+        try {
+            $out = Join-Path $TestDrive 'standalone-report.html'
+            $null = $sandbox.AddScript((Get-Content -Path $script:DefinitionsPath -Raw)).Invoke()
+            $sandbox.Commands.Clear()
+            $script = @"
+`$p = [pscustomobject]@{ ObjectId = 'p1'; Type = 'User'; DisplayName = 'Alice Admin'; UPN = 'alice@contoso.com'; AppId = `$null; IsEnabled = `$true; ActivityStatus = 'Active'; ActivityReason = `$null }
+`$f = Resolve-RiskyRoleAssignmentFinding -RoleScope Entra -RoleName 'Global Administrator' -RoleDefinitionId 'r1' -Scope '/' -ScopeName 'Tenant-wide' -AssignmentType Permanent -AssignmentId 'a1' -Principal `$p
+ConvertTo-RiskyRoleReportHtml -InputObject @(`$f) -TenantId 't1' -TenantName 'Contoso' | Set-Content -Path '$out' -Encoding utf8 -NoNewline
+"@
+            $null = $sandbox.AddScript($script).Invoke()
+            $sandbox.Streams.Error | ForEach-Object { $_.ToString() } | Should -Be @()
+            $html = Get-Content -Path $out -Raw
+            $html | Should -Match 'Alice Admin'
+            $html | Should -Match 'const DATA = \['
+            $html | Should -Not -Match '__(DATA|META|TITLE)__' -Because 'every placeholder must be filled'
+        }
+        finally { $sandbox.Dispose() }
+    }
+}

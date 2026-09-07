@@ -33,7 +33,7 @@ function ConvertTo-RiskyRoleReportHtml {
         [datetime]$GeneratedAt = (Get-Date)
     )
 
-    $template = Get-Content -Path (Join-Path $script:ModuleRoot 'Resources' 'report.html') -Raw -Encoding utf8
+    $template = Get-RiskyRoleReportTemplate
 
     $rows = [System.Collections.Generic.List[object]]::new()
     foreach ($item in @($InputObject)) {
