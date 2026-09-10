@@ -33,16 +33,17 @@ function Connect-RiskyRolesAnalyzer {
     System.Management.Automation.PSCustomObject with TenantId, GraphAccount, GraphScopes and AzureAccount.
 
     .NOTES
-    Required permissions, read path: Graph delegated scopes RoleManagement.Read.Directory,
-    Directory.Read.All, Group.Read.All and Application.Read.All, which a user consents to at sign-in;
-    Azure Reader on every subscription you want to audit, or at a management group above them.
-    Entra ID P2 for the PIM parts; without it Get-RiskyRoleAssignment warns once and continues.
+    RequiredPermissions: On the read path, the Graph delegated scopes
+    RoleManagement.Read.Directory, Directory.Read.All, Group.Read.All and Application.Read.All,
+    which a user consents to at sign-in, plus Azure Reader on every subscription you want to audit,
+    or at a management group above them. Entra ID P2 for the PIM parts; without it
+    Get-RiskyRoleAssignment warns once and continues.
 
     The write path adds RoleManagement.ReadWrite.Directory (-RequestWriteScopes) and, on the Azure
     side, Microsoft.Authorization/roleAssignments/delete on the scope.
 
-    The Graph session lives in this PowerShell process. A new pwsh starts without it, while the Azure
-    session is read back from disk, so run Connect- and Get- in the same session.
+    Session: The Graph session lives in this PowerShell process. A new pwsh starts without it,
+    while the Azure session is read back from disk, so run Connect- and Get- in the same session.
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]

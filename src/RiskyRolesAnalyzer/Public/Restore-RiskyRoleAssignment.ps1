@@ -30,8 +30,8 @@ function Restore-RiskyRoleAssignment {
     RiskyRolesAnalyzer.RiskyRoleAssignmentRestore
 
     .NOTES
-    Required permissions: Azure: Microsoft.Authorization/roleAssignments/write on the scope.
-    Entra: RoleManagement.ReadWrite.Directory (Connect-RiskyRolesAnalyzer -RequestWriteScopes).
+    RequiredPermissions: On Azure, Microsoft.Authorization/roleAssignments/write on the scope.
+    On Entra, RoleManagement.ReadWrite.Directory (Connect-RiskyRolesAnalyzer -RequestWriteScopes).
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High', DefaultParameterSetName = 'Path')]
     [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignmentRestore')]

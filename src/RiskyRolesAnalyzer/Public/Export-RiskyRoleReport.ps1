@@ -38,13 +38,14 @@ function Export-RiskyRoleReport {
     System.IO.FileInfo
 
     .NOTES
-    Required permissions: none beyond what produced the findings. The report is rendered from the
+    RequiredPermissions: None beyond what produced the findings. The report is rendered from the
     objects you pass in. The tenant name is looked up through Graph when a session exists and the
     organisation is readable; without it the header shows the tenant id alone.
 
-    The file is self-contained: no external scripts, styles or fonts, nothing is sent anywhere, and
-    the findings are embedded as JSON. It is safe to hand to someone outside your organisation only
-    if the findings themselves are, because it contains principal names, ids and scopes.
+    Handling: The file is self-contained. No external scripts, styles or fonts, nothing is sent
+    anywhere, and the findings are embedded as JSON. It is safe to hand to someone outside your
+    organisation only if the findings themselves are, because it contains principal names, ids and
+    scopes.
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
     [OutputType([System.IO.FileInfo])]

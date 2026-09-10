@@ -82,8 +82,47 @@ function Format-Cell {
     return (($Text -replace '\s*\n\s*', ' ') -replace '\|', '\|').Trim()
 }
 
+# The .NOTES block is "Label: value" with indented continuation lines. Rendered as-is it is a grey
+# wall; as a table the permissions line is something a reader can find.
+$notesDrop = @('Author', 'Version', 'Created', 'LastModified')
+$notesRename = @{ RequiredPermissions = 'Permissions' }
+function ConvertTo-RequirementsTable {
+    param([string[]]$Lines)
+
+    $rows = [System.Collections.Generic.List[object]]::new()
+    foreach ($line in $Lines) {
+        $start = [regex]::Match($line, '^([A-Za-z][A-Za-z ]*?):\s+(.*)$')
+        if ($start.Success) {
+            $rows.Add([pscustomobject]@{ Label = $start.Groups[1].Value.Trim(); Parts = [System.Collections.Generic.List[string]]@($start.Groups[2].Value.Trim()) })
+        }
+        elseif ($line.Trim()) {
+            # A line before the first label belongs to no row, and a table has nowhere to put it.
+            # A .NOTES block written as prose is not a label list, so it stays prose rather than
+            # losing its opening paragraph on the way to the site.
+            if (-not $rows.Count) { return $null }
+            $rows[$rows.Count - 1].Parts.Add($line.Trim())
+        }
+    }
+    if (-not $rows.Count) { return $null }
+
+    $out = [System.Collections.Generic.List[string]]::new()
+    $out.Add('| | |')
+    $out.Add('|---|---|')
+    foreach ($row in $rows) {
+        if ($row.Label -in $notesDrop) { continue }
+        $label = if ($notesRename.ContainsKey($row.Label)) { $notesRename[$row.Label] } else { $row.Label }
+        $out.Add("| **$label** | $(Format-Cell ($row.Parts -join ' ')) |")
+    }
+    if ($out.Count -le 2) { return $null }
+    return $out
+}
+
 $pages = @{}
 $sitePages = @{}
+# An undocumented parameter and a missing example both render as a hole on the published page -
+# an empty table cell, or a code block with nothing in it. Neither breaks the build, so both stay
+# broken until somebody reads the site. Collected here and reported at the end instead.
+$gaps = [System.Collections.Generic.List[string]]::new()
 
 # The audit script is the primary entry point, so it gets a page from its own help just like the
 # commands do. Get-Help on a .ps1 returns the same shape as for a function.
@@ -128,6 +167,7 @@ foreach ($command in $documented) {
     $lines.Add('')
 
     $notes = Format-HelpText $help.alertSet.alert
+    if ($notes -notmatch 'RequiredPermissions\s*:') { $gaps.Add("$name`: no RequiredPermissions in .NOTES") }
     if ($notes) {
         $lines.Add('## Requirements and notes')
         $lines.Add('')
@@ -148,6 +188,7 @@ foreach ($command in $documented) {
             $default = Format-Cell ([string]$parameter.defaultValue)
             if ($default -in '', 'None', 'False') { $default = '' }
             $text = Format-Cell (Format-HelpText $parameter.description)
+            if (-not $text) { $gaps.Add("$name -$($parameter.name): no description") }
             $lines.Add("| ``-$($parameter.name)`` | $type | $required | $pipeline | $default | $text |")
         }
     }
@@ -162,7 +203,8 @@ foreach ($command in $documented) {
         $lines.Add('')
     }
 
-    $examples = @($help.examples.example)
+    $examples = @($help.examples.example | Where-Object { $_ -and (Format-HelpText $_.code) })
+    if (-not $examples.Count) { $gaps.Add("$name`: no examples") }
     if ($examples.Count) {
         $lines.Add('## Examples')
         $lines.Add('')
@@ -202,11 +244,33 @@ foreach ($command in $documented) {
     $body = [System.Collections.Generic.List[string]]::new()
     if ($description) { $body.Add($description); $body.Add('') }
     $started = $false
+    $inNotes = $false
+    $noteLines = [System.Collections.Generic.List[string]]::new()
     foreach ($line in $lines) {
         if ($line -eq '## Syntax') { $started = $true }
         if (-not $started) { continue }
         if ($line -eq '---') { break }
-        $body.Add(($line -replace '^## Requirements and notes$', '## Requirements'))
+        if ($line -eq '## Requirements and notes') {
+            $body.Add('## Requirements'); $body.Add('')
+            $inNotes = $true; $noteLines.Clear(); continue
+        }
+        if ($inNotes) {
+            if ($line.StartsWith('## ')) {
+                $table = ConvertTo-RequirementsTable -Lines $noteLines
+                if ($table) { $table | ForEach-Object { $body.Add($_) } } else { $noteLines | ForEach-Object { $body.Add($_) } }
+                $body.Add(''); $inNotes = $false; $body.Add($line); continue
+            }
+            # Format-HelpText hands the whole .NOTES block back as one multi-line string, so it
+            # arrives here as a single element. Split it, or every label lands on one line.
+            foreach ($noteLine in ($line -split "`r?`n")) { $noteLines.Add($noteLine) }
+            continue
+        }
+        $body.Add($line)
+    }
+    if ($inNotes) {
+        $table = ConvertTo-RequirementsTable -Lines $noteLines
+        if ($table) { $table | ForEach-Object { $body.Add($_) } } else { $noteLines | ForEach-Object { $body.Add($_) } }
+        $body.Add('')
     }
     # Read before write, and sign in before either: the order someone works in, not the alphabet.
     $verbRank = @{ Connect = 1; Test = 2; Get = 3; Export = 4; Show = 5; Start = 6; Invoke = 7; Complete = 8; Set = 9; New = 10; Add = 11; Update = 12; Remove = 13; Restore = 14; Disconnect = 15 }
@@ -238,8 +302,14 @@ $index.Add('')
 $index.Add('| | |')
 $index.Add('|---|---|')
 $index.Add("| Module version | $($manifest.Version)$(if ($manifest.PrivateData.PSData.Prerelease) { "-$($manifest.PrivateData.PSData.Prerelease)" }) |")
-$index.Add("| PowerShell | $($manifest.PowerShellVersion)+ ($($manifest.CompatiblePSEditions -join ', ')) |")
-$required = @($manifest.RequiredModules | ForEach-Object { "``$($_.Name)`` $($_.Version)+" })
+$editions = @($manifest.CompatiblePSEditions) -join ', '
+$index.Add("| PowerShell | $($manifest.PowerShellVersion)+$(if ($editions) { " ($editions)" }) |")
+# A RequiredModules entry is either a hashtable with a version or a bare name. Printing "+" after
+# a version that is not there reads like a typo, so the suffix is conditional.
+$required = @($manifest.RequiredModules | ForEach-Object {
+        $version = if ($_.Version) { " $($_.Version)+" }
+        "``$($_.Name)``$version"
+    })
 $index.Add("| Required modules | $(if ($required.Count) { $required -join ', ' } else { 'none' }) |")
 $index.Add("| Getting it | Clone the repository and ``Import-Module ./src/$moduleName/$moduleName.psd1`` |")
 $index.Add('')
@@ -275,8 +345,14 @@ $pages['README.md'] = ($index -join "`n").TrimEnd() + "`n"
 # ---- write or check ----------------------------------------------------------------------------
 $target = Join-Path $repoRoot 'docs' 'commands'
 
+if ($gaps.Count) {
+    Write-Warning "The published reference would have $($gaps.Count) hole(s):"
+    $gaps | ForEach-Object { Write-Warning "  $_" }
+}
+
 if ($Check) {
     $problems = [System.Collections.Generic.List[string]]::new()
+    foreach ($gap in $gaps) { $problems.Add("undocumented: $gap") }
     foreach ($name in ($pages.Keys | Sort-Object)) {
         $path = Join-Path $target $name
         if (-not (Test-Path -Path $path)) { $problems.Add("missing: docs/commands/$name"); continue }
@@ -288,7 +364,7 @@ if ($Check) {
     }
     if ($problems.Count) {
         $problems | ForEach-Object { Write-Warning $_ }
-        throw "The command reference is not current. Run ./tools/New-CommandReference.ps1 and commit the result."
+        throw "The command reference is not current, or has undocumented parameters. Fix the comment-based help, run ./tools/New-CommandReference.ps1 and commit the result."
     }
     "The command reference matches the help of $($commands.Count) command(s)."
     return
