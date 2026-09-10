@@ -35,9 +35,9 @@ function Remove-RiskyRoleAssignment {
     RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval
 
     .NOTES
-    Required permissions, write path: Azure: Microsoft.Authorization/roleAssignments/delete on
-    the scope (Owner or User Access Administrator). Entra: RoleManagement.ReadWrite.Directory
-    plus a role that may remove the assignment (Privileged Role Administrator).
+    RequiredPermissions: On Azure, Microsoft.Authorization/roleAssignments/delete on the scope
+    (Owner or User Access Administrator). On Entra, RoleManagement.ReadWrite.Directory plus a role
+    that may remove the assignment (Privileged Role Administrator).
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('RiskyRolesAnalyzer.RiskyRoleAssignmentRemoval')]

@@ -22,8 +22,8 @@ Restore-RiskyRoleAssignment -InputObject <Object[]> [-WhatIf] [-Confirm] [<Commo
 
 ## Requirements and notes
 
-Required permissions: Azure: Microsoft.Authorization/roleAssignments/write on the scope.
-Entra: RoleManagement.ReadWrite.Directory (Connect-RiskyRolesAnalyzer -RequestWriteScopes).
+RequiredPermissions: On Azure, Microsoft.Authorization/roleAssignments/write on the scope.
+On Entra, RoleManagement.ReadWrite.Directory (Connect-RiskyRolesAnalyzer -RequestWriteScopes).
 
 ## Parameters
 

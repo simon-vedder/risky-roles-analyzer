@@ -28,9 +28,9 @@ Get-RiskyRoleAssignment [[-SubscriptionId] <string[]>] [[-AdditionalAzureRole] <
 
 ## Requirements and notes
 
-Required permissions, read path only:
-  Graph: RoleManagement.Read.Directory, Directory.Read.All, Group.Read.All, Application.Read.All
-  Azure: Reader on every subscription in scope (a management group assignment works)
+RequiredPermissions: Read only. On Graph, RoleManagement.Read.Directory, Directory.Read.All,
+Group.Read.All and Application.Read.All. On Azure, Reader on every subscription in scope (a
+management group assignment works).
 
 ## Parameters
 
